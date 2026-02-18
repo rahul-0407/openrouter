@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -11,4 +5,83 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+model User {
+  id                 Int                 @id @default(autoincrement())
+  email              String              @unique
+  password           String
+  credits            Int                 @default(1000)
+  apiKeys            ApiKey[]
+  onrampTransactions OnrampTransaction[]
+  conversations      Conversation[]
+}
+
+model ApiKey {
+  id            Int            @id @default(autoincrement())
+  userId        Int
+  name          String
+  apiKey        String         @unique
+  disabled      Boolean        @default(false)
+  deleted       Boolean        @default(false)
+  lastUsed      DateTime?
+  creditsConsumed  Int        @default(0)
+  user          User           @relation(fields: [userId], references: [id])
+  conversations Conversation[]
+}
+
+model Company {
+  id      Int    @id @default(autoincrement())
+  name    String
+  website String
+  models  Model[]
+}
+
+model Model {
+  id                    Int                    @id @default(autoincrement())
+  name                  String
+  slug                  String
+  companyId             Int
+  company               Company                @relation(fields: [companyId], references: [id])
+  modelProviderMappings ModelProviderMapping[]
+}
+
+model Provider {
+  id                    Int                    @id @default(autoincrement())
+  name                  String
+  website               String
+  modelProviderMappings ModelProviderMapping[]
+}
+
+model ModelProviderMapping {
+  id              Int            @id @default(autoincrement())
+  modelId         Int
+  providerId      Int
+  inputTokenCost  Int
+  outputTokenCost Int
+  model           Model          @relation(fields: [modelId], references: [id])
+  provider        Provider       @relation(fields: [providerId], references: [id])
+  conversations   Conversation[]
+}
+
+model OnrampTransaction {
+  id     Int    @id @default(autoincrement())
+  userId Int
+  amount Int
+  status String
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model Conversation {
+  id                     Int                  @id @default(autoincrement())
+  userId                 Int
+  apiKeyId               Int
+  modelProviderMappingId Int
+  input                  String
+  output                 String
+  inputTokenCount        Int
+  outputTokenCount       Int
+  user                   User                 @relation(fields: [userId], references: [id])
+  apiKey                 ApiKey               @relation(fields: [apiKeyId], references: [id])
+  modelProviderMapping   ModelProviderMapping @relation(fields: [modelProviderMappingId], references: [id])
 }
