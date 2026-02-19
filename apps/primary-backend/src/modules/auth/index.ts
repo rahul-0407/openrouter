@@ -33,6 +33,6 @@ export const app = new Elysia({ prefix: "/auth" })
     body: AuthModel.signinSchema,
     response: {
       200: AuthModel.signinResponseSchema,
-      403: AuthModel.signinFailureSchema,
+      403: AuthModel.signinFailureResponseSchema,
     }
   });
