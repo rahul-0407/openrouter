@@ -28,4 +28,14 @@ export abstract class AuthService {
 
         return {correctCredentials:true, userId: user.id.toString()};
     }
+    static async getUserDetails (id: number){
+        return prisma.user.findFirst({
+            where:{
+                id
+            },
+            select:{
+                credits:true
+            }
+        })
+    }
 }
