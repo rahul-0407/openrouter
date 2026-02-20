@@ -1,8 +1,15 @@
 import { Elysia } from "elysia";
 import { AuthModel } from "./models";
 import { AuthService } from "./service";
+import jwt from "@elysiajs/jwt";
 
 export const app = new Elysia({ prefix: "/auth" })
+  .use(
+    jwt({
+      name: 'jwt',
+      secret: process.env.JWT_SECRET!
+    })
+  )
   .post("/sign-up", async ({ body, status }) => {
     try {
       const userId = await AuthService.signup(body.email, body.password);
@@ -20,11 +27,21 @@ export const app = new Elysia({ prefix: "/auth" })
       400: AuthModel.signupFailedResponseSchema,
     }
   })
-  .post("/sign-in", async ({ body, status }) => {
-    try {
-      const token = await AuthService.signin(body.email, body.password);
-      return { token };
-    } catch (error) {
+  .post("/sign-in", async ({jwt, body, status, cookie: { auth } }) => {
+
+    const { correctCredentials, userId } = await AuthService.signin(body.email, body.password);
+    if (correctCredentials && userId) {
+      const token = await jwt.sign({userId})
+      
+      auth.set({
+        value: token,
+        httpOnly: true,
+        maxAge: 7 * 86400,
+      })
+      return {
+        message: "Signed in successfully"
+      }
+    } else {
       return status(403, {
         message: "Incorrect credentials"
       })
