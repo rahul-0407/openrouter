@@ -27,12 +27,12 @@ export const app = new Elysia({ prefix: "/auth" })
       400: AuthModel.signupFailedResponseSchema,
     }
   })
-  .post("/sign-in", async ({jwt, body, status, cookie: { auth } }) => {
+  .post("/sign-in", async ({ jwt, body, status, cookie: { auth } }) => {
 
     const { correctCredentials, userId } = await AuthService.signin(body.email, body.password);
     if (correctCredentials && userId) {
-      const token = await jwt.sign({userId})
-      
+      const token = await jwt.sign({ userId })
+
       auth.set({
         value: token,
         httpOnly: true,
@@ -52,4 +52,33 @@ export const app = new Elysia({ prefix: "/auth" })
       200: AuthModel.signinResponseSchema,
       403: AuthModel.signinFailureResponseSchema,
     }
-  });
+  })
+  .resolve(async ({ cookie: { auth }, status, jwt }) => {
+    if (!auth) {
+      return status(401)
+    }
+
+    const decoded = await jwt.verify(auth.value as string);
+
+    if (!decoded || !decoded.userId) {
+      return status(401)
+    }
+
+    return {
+      userId: decoded.userId as string
+    }
+  })
+  .get("/profile", async ({ userId, status }) => {
+    const userData = await AuthService.getUserDetails(Number(userId));
+    if (!userData) {
+      return status(400, {
+        message: "Error while fetching user details"
+      })
+    }
+    return userData
+  }, {
+    response: {
+      200: AuthModel.profileResponseSchema,
+      400: AuthModel.profileResponseErrorSchema
+    }
+  })
