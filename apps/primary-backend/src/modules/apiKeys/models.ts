@@ -31,7 +31,7 @@ export namespace ApiKeyModel {
         message: t.Literal("Updating api key unsuccessful")
     })
 
-    export type disableApiKeyResponseFailedSchema = typeof disableApiKeyResponseSchema.static;
+    export type disableApiKeyResponseFailedSchema = typeof disableApiKeyResponseFailedSchema.static;
 
     export const getApiKeysResponseSchema = t.Object({
         apiKeys: t.Array(t.Object({
