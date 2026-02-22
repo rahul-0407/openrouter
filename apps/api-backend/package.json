@@ -6,10 +6,11 @@
     "dev": "bun run --watch src/index.ts"
   },
   "dependencies": {
-    "db":"*",
     "@anthropic-ai/sdk": "^0.78.0",
     "@elysiajs/bearer": "^1.4.3",
+    "@elysiajs/openapi": "^1.4.14",
     "@google/genai": "^1.42.0",
+    "db": "*",
     "elysia": "^1.4.25",
     "openai": "^6.22.0"
   },
