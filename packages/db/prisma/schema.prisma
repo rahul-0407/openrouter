@@ -15,6 +15,7 @@ model User {
   apiKeys            ApiKey[]
   onrampTransactions OnrampTransaction[]
   conversations      Conversation[]
+  usageMetrics       UsageMetric[]
 }
 
 model ApiKey {
@@ -84,4 +85,24 @@ model Conversation {
   user                   User                 @relation(fields: [userId], references: [id])
   apiKey                 ApiKey               @relation(fields: [apiKeyId], references: [id])
   modelProviderMapping   ModelProviderMapping @relation(fields: [modelProviderMappingId], references: [id])
+}
+
+model UsageMetric {
+  id                  Int      @id @default(autoincrement())
+  userId              Int
+  apiKey              String
+  model               String
+  provider            String
+  inputTokens         Int
+  outputTokens        Int
+  totalTokens         Int
+  cost                Float
+  latencyMs           Int
+  success             Boolean
+  firstTokenLatencyMs Int?
+  createdAt           DateTime @default(now())
+  user                User     @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
 }
