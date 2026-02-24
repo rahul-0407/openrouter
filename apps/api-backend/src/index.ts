@@ -5,7 +5,7 @@ import { Conversation } from "./types";
 import { Gemini } from "./llms/Gemini";
 import { OpenAi } from "./llms/OpenAi";
 import { Claude } from "./llms/Claude";
-import { LlmResponse } from "./llms/Base";
+import { LlmResponse, LlmStreamResult } from "./llms/Base";
 import { openapi } from '@elysiajs/openapi'
 
 const app = new Elysia()
@@ -14,6 +14,7 @@ const app = new Elysia()
 .post("/api/v1/chat/completions", async ({ status, bearer: apiKey, body }) => {
   const startTime = performance.now();
   const model = body.model;
+  const isStreaming = body.stream === true;
   const [_companyName, providerModelName] = model.split("/");
   const apiKeyDb = await prisma.apiKey.findFirst({
     where: {
@@ -27,7 +28,6 @@ const app = new Elysia()
   })
 
   if (!apiKeyDb) {
-    // Record failed metric — invalid API key
     const latencyMs = Math.round(performance.now() - startTime);
     insertUsageMetric({
       userId: 0,
@@ -101,6 +101,135 @@ const app = new Elysia()
 
   const provider = providers[Math.floor(Math.random() * providers.length)];
 
+  // ── STREAMING PATH ──────────────────────────────────────────────
+  if (isStreaming) {
+    let streamResult: LlmStreamResult | null = null;
+
+    try {
+      if (provider.provider.name === "Google API" || provider.provider.name === "Google Vertex") {
+        streamResult = await Gemini.chatStream(providerModelName, body.messages);
+      } else if (provider.provider.name === "OpenAI") {
+        streamResult = await OpenAi.chatStream(providerModelName, body.messages);
+      } else if (provider.provider.name === "Claude API") {
+        streamResult = await Claude.chatStream(providerModelName, body.messages);
+      }
+    } catch (err) {
+      const latencyMs = Math.round(performance.now() - startTime);
+      insertUsageMetric({
+        userId: apiKeyDb.user.id,
+        apiKey: apiKey ?? "unknown",
+        model,
+        provider: provider?.provider?.name ?? "unknown",
+        inputTokens: 0,
+        outputTokens: 0,
+        totalTokens: 0,
+        cost: 0,
+        latencyMs,
+        success: false,
+      });
+      return status(500, { message: "Provider error" });
+    }
+
+    if (!streamResult) {
+      const latencyMs = Math.round(performance.now() - startTime);
+      insertUsageMetric({
+        userId: apiKeyDb.user.id,
+        apiKey: apiKey ?? "unknown",
+        model,
+        provider: provider?.provider?.name ?? "unknown",
+        inputTokens: 0,
+        outputTokens: 0,
+        totalTokens: 0,
+        cost: 0,
+        latencyMs,
+        success: false,
+      });
+      return status(403, { message: "No provider found for this model" });
+    }
+
+    const { stream: tokenStream, getUsage } = streamResult;
+    const userId = apiKeyDb.user.id;
+    const providerName = provider.provider.name;
+    const inputTokenCost = provider.inputTokenCost;
+    const outputTokenCost = provider.outputTokenCost;
+
+    const readable = new ReadableStream({
+      async start(controller) {
+        const encoder = new TextEncoder();
+        try {
+          for await (const token of tokenStream) {
+            const chunk = JSON.stringify({
+              choices: [{ delta: { content: token } }]
+            });
+            controller.enqueue(encoder.encode(`data: ${chunk}\n\n`));
+          }
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+
+          // Record success metric after stream completes
+          const latencyMs = Math.round(performance.now() - startTime);
+          const usage = getUsage();
+          const totalTokens = usage.inputTokens + usage.outputTokens;
+          const creditsUsed = (usage.inputTokens * inputTokenCost + usage.outputTokens * outputTokenCost) / 10;
+
+          // Deduct credits (fire-and-forget)
+          prisma.user.update({
+            where: { id: userId },
+            data: { credits: { decrement: creditsUsed } }
+          }).catch(() => {});
+          prisma.apiKey.update({
+            where: { apiKey: apiKey },
+            data: { creditsConsumed: { increment: creditsUsed } }
+          }).catch(() => {});
+
+          insertUsageMetric({
+            userId,
+            apiKey: apiKey ?? "unknown",
+            model,
+            provider: providerName,
+            inputTokens: usage.inputTokens,
+            outputTokens: usage.outputTokens,
+            totalTokens,
+            cost: creditsUsed,
+            latencyMs,
+            success: true,
+          });
+        } catch (err) {
+          // Mid-stream failure
+          const errorChunk = JSON.stringify({ error: { message: "Stream interrupted" } });
+          controller.enqueue(encoder.encode(`data: ${errorChunk}\n\n`));
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+
+          const latencyMs = Math.round(performance.now() - startTime);
+          insertUsageMetric({
+            userId,
+            apiKey: apiKey ?? "unknown",
+            model,
+            provider: providerName,
+            inputTokens: 0,
+            outputTokens: 0,
+            totalTokens: 0,
+            cost: 0,
+            latencyMs,
+            success: false,
+          });
+        }
+      }
+    });
+
+    return new Response(readable, {
+  headers: {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    "Connection": "keep-alive",
+    "Access-Control-Allow-Origin": "http://localhost:3001",
+    "Access-Control-Allow-Credentials": "true",
+  },
+});
+  }
+
+  // ── NON-STREAMING PATH (existing behavior) ─────────────────────
   let response: LlmResponse | null = null
   try {
     if (provider.provider.name === "Google API") {

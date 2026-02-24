@@ -9,6 +9,6 @@ export type Messages = typeof Message.static
 
 export const Conversation = t.Object({
     model: t.String(),
-    messages: Message
+    messages: Message,
+    stream: t.Optional(t.Boolean())
 })
-
