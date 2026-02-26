@@ -11,7 +11,7 @@ export abstract class PaymentsService {
                     id: userId
                 },
                 data: {
-                    credits: {
+                    walletBalance: {
                         increment: ONRAMP_AMOUNT
                     }
                 }
@@ -22,9 +22,17 @@ export abstract class PaymentsService {
                     amount: ONRAMP_AMOUNT,
                     status: "completed"
                 }
+            }),
+            prisma.walletTransaction.create({
+                data: {
+                    userId,
+                    amount: ONRAMP_AMOUNT,
+                    type: "CREDIT",
+                    description: "Wallet top-up"
+                }
             })
         ])
 
-        return user.credits;
+        return user.walletBalance;
     }
 }

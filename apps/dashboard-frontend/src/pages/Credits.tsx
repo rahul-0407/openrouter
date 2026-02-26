@@ -46,7 +46,7 @@ export function Credits() {
             const response = await elysiaClient.payments.onramp.post();
             if (response.error) {
                 const errValue = response.error.value as { message?: string } | undefined;
-                throw new Error(errValue?.message || "Failed to add credits");
+                throw new Error(errValue?.message || "Failed to add funds");
             }
             return response.data;
         },
@@ -61,16 +61,16 @@ export function Credits() {
         (sum, k) => sum + (k.credisConsumed ?? 0),
         0
     );
-    const credits = userProfileQuery.data?.credits;
+    const walletBalance = userProfileQuery.data?.walletBalance;
 
     return (
         <DashboardLayout>
             <div className="space-y-8">
                 {/* Header */}
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Credits</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">Wallet</h1>
                     <p className="text-muted-foreground text-sm mt-1">
-                        Manage your account balance and add credits.
+                        Manage your wallet balance and add funds.
                     </p>
                 </div>
 
@@ -84,9 +84,9 @@ export function Credits() {
                                         <Wallet className="size-5 text-emerald-400" />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-medium text-emerald-400">Current Balance</p>
+                                        <p className="text-sm font-medium text-emerald-400">Wallet Balance</p>
                                         <p className="text-3xl font-bold tracking-tight">
-                                            {onrampMutation.data.credits?.toLocaleString() ?? "—"} credits
+                                            {onrampMutation.data.walletBalance?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? "—"}
                                         </p>
                                     </div>
                                 </div>
@@ -97,7 +97,7 @@ export function Credits() {
                     <Card className="bg-card/50 border-border/50">
                         <CardHeader className="pb-2">
                             <div className="flex items-center justify-between">
-                                <span className="text-sm text-muted-foreground">Credits available</span>
+                                <span className="text-sm text-muted-foreground">Wallet Balance</span>
                                 <TrendingUp className="size-4 text-muted-foreground/60" />
                             </div>
                         </CardHeader>
@@ -106,7 +106,7 @@ export function Credits() {
                                 {userProfileQuery.isLoading ? (
                                     <Loader2 className="size-5 animate-spin text-muted-foreground" />
                                 ) : (
-                                    credits
+                                    walletBalance?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? "0.00"
                                 )}
                             </p>
                             <p className="text-xs text-muted-foreground mt-1">
@@ -151,9 +151,9 @@ export function Credits() {
                 {/* Add credits */}
                 <Card className="bg-card/30 border-border/50">
                     <CardHeader>
-                        <CardTitle className="text-lg">Add Credits</CardTitle>
+                        <CardTitle className="text-lg">Add Funds</CardTitle>
                         <CardDescription>
-                            Top up your account with 1,000 credits per transaction.
+                            Top up your wallet with 1,000 per transaction.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -161,7 +161,7 @@ export function Credits() {
                             <div className="flex items-center gap-3 rounded-lg border border-border/50 bg-card/50 px-4 py-3 flex-1">
                                 <Coins className="size-5 text-muted-foreground" />
                                 <div>
-                                    <p className="text-sm font-medium">1,000 Credits</p>
+                                    <p className="text-sm font-medium">1,000 Funds</p>
                                     <p className="text-xs text-muted-foreground">Standard top-up</p>
                                 </div>
                             </div>
@@ -180,7 +180,7 @@ export function Credits() {
                                 ) : (
                                     <>
                                         <Plus className="size-4" />
-                                        Add credits
+                                        Add funds
                                     </>
                                 )}
                             </Button>
@@ -190,7 +190,7 @@ export function Credits() {
                             <div className="flex items-start gap-2.5 text-sm text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3.5 py-3 mt-4">
                                 <CheckCircle2 className="size-4 shrink-0 mt-0.5" />
                                 <span>
-                                    1,000 credits added successfully! Your new balance: {onrampMutation.data?.credits?.toLocaleString() ?? "—"} credits.
+                                    1,000 added to wallet successfully! Your new balance: {onrampMutation.data?.walletBalance?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? "—"}.
                                 </span>
                             </div>
                         )}
@@ -199,7 +199,7 @@ export function Credits() {
                             <div className="flex items-start gap-2.5 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3.5 py-3 mt-4">
                                 <AlertCircle className="size-4 shrink-0 mt-0.5" />
                                 <span>
-                                    {onrampMutation.error?.message || "Failed to add credits. Please try again."}
+                                    {onrampMutation.error?.message || "Failed to add funds. Please try again."}
                                 </span>
                             </div>
                         )}

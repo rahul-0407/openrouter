@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import {
     LayoutDashboard,
     Key,
-    Coins,
+    Wallet,
     BarChart3,
     MessageSquare,
     Zap,
@@ -13,7 +13,7 @@ import {
 const navItems = [
     { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { label: "API Keys", href: "/api-keys", icon: Key },
-    { label: "Credits", href: "/credits", icon: Coins },
+    { label: "Wallet", href: "/wallet", icon: Wallet },
     { label: "Metrics", href: "/metrics", icon: BarChart3 },
     { label: "Chat", href: "/chat", icon: MessageSquare },
 ];

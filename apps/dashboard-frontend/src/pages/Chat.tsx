@@ -36,6 +36,7 @@ async function streamChat(
 ) {
     const res = await fetch(`${API_BASE}/api/v1/chat/completions`, {
         method: "POST",
+        credentials: "include", 
         headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${apiKey}`,
@@ -171,10 +172,12 @@ export function Chat() {
                     setStreamingContent(accumulated);
                 },
                 () => {
-                    setMessages((prev) => [
-                        ...prev,
-                        { role: "assistant", content: accumulated },
-                    ]);
+                    if (accumulated) {
+                        setMessages((prev) => [
+                            ...prev,
+                            { role: "assistant", content: accumulated },
+                        ]);
+                    }
                     setStreamingContent("");
                     setIsSending(false);
                 },
@@ -215,7 +218,7 @@ export function Chat() {
                             Streaming conversation with AI models.
                         </p>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 ">
                         {modelsLoading ? (
                             <div className="flex items-center gap-2 text-muted-foreground text-sm">
                                 <Loader2 className="size-3.5 animate-spin" />
@@ -223,13 +226,13 @@ export function Chat() {
                             </div>
                         ) : (
                             <Select value={selectedModel} onValueChange={setSelectedModel}>
-                                <SelectTrigger className="w-[280px]">
+                                <SelectTrigger className="w-[280px] bg-black">
                                     <SelectValue placeholder="Select a model" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {models.map((m) => (
                                         <SelectItem key={m.slug} value={m.slug}>
-                                            <span className="font-mono text-xs text-white">{m.slug}</span>
+                                            <span className=" font-mono text-xs text-white">{m.slug}</span>
                                         </SelectItem>
                                     ))}
                                 </SelectContent>

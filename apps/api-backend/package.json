@@ -8,6 +8,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
     "@elysiajs/bearer": "^1.4.3",
+    "@elysiajs/cors": "^1.4.1",
     "@elysiajs/openapi": "^1.4.14",
     "@google/genai": "^1.42.0",
     "db": "*",

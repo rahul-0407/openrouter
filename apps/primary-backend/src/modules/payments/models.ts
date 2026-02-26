@@ -3,7 +3,7 @@ import { t } from "elysia";
 export namespace PaymentsModel {
     export const onrampResponseSchema = t.Object({
         message: t.Literal("Onramp successful"),
-        credits: t.Number()
+        walletBalance: t.Number()
     })
 
     export type onrampResponseSchema = typeof onrampResponseSchema.static;

@@ -1,10 +1,10 @@
-import {PrismaClient} from "./generated/prisma/client";
+import { PrismaClient } from "./generated/prisma/client";
 import type { Prisma } from "./generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
-const adapter = new PrismaPg({connectionString: process.env.DATABASE_URL});
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 
-export const prisma = new PrismaClient({adapter});
+export const prisma = new PrismaClient({ adapter });
 
 /**
  * Fire-and-forget usage metric insertion.
@@ -18,5 +18,19 @@ export async function insertUsageMetric(
     await prisma.usageMetric.create({ data });
   } catch (err) {
     console.error("[metrics] Failed to insert usage metric:", err);
+  }
+}
+
+/**
+ * Fire-and-forget wallet transaction insertion.
+ * Wraps prisma.walletTransaction.create in try/catch — logs errors but never throws.
+ */
+export async function insertWalletTransaction(
+  data: Omit<Prisma.WalletTransactionUncheckedCreateInput, "id" | "createdAt">
+): Promise<void> {
+  try {
+    await prisma.walletTransaction.create({ data });
+  } catch (err) {
+    console.error("[wallet] Failed to insert wallet transaction:", err);
   }
 }

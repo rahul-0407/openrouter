@@ -27,10 +27,10 @@ export const app = new Elysia({ prefix: "payments" })
     })
     .post("/onramp", async ({ userId, status }) => {
         try {
-            const credits = await PaymentsService.onramp(Number(userId));
+            const walletBalance = await PaymentsService.onramp(Number(userId));
             return {
                 message: "Onramp successful" as const,
-                credits
+                walletBalance
             }
         } catch (e) {
             return status(411, {

@@ -83,7 +83,7 @@ export function Dashboard() {
                         <Card className="bg-card/50 border-border/50">
                             <CardHeader className="pb-2">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm text-muted-foreground">Credits Used</span>
+                                    <span className="text-sm text-muted-foreground">Funds Used</span>
                                     <Coins className="size-4 text-muted-foreground/60" />
                                 </div>
                             </CardHeader>
@@ -147,13 +147,13 @@ export function Dashboard() {
                                     <div className="size-10 rounded-lg bg-primary/5 border border-border/50 flex items-center justify-center mb-3">
                                         <Coins className="size-5 text-muted-foreground" />
                                     </div>
-                                    <h3 className="font-semibold text-sm">Add Credits</h3>
+                                    <h3 className="font-semibold text-sm">Add Funds</h3>
                                     <p className="text-xs text-muted-foreground mt-1">
-                                        Top up your balance to keep making requests.
+                                        Top up your wallet to keep making requests.
                                     </p>
                                 </div>
                                 <Button variant="outline" size="sm" asChild>
-                                    <Link to="/credits">
+                                    <Link to="/wallet">
                                         Go
                                         <ArrowRight className="size-3.5" />
                                     </Link>
@@ -182,7 +182,7 @@ export function Dashboard() {
                                         <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Name</th>
                                         <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Key</th>
                                         <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Status</th>
-                                        <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground">Credits Used</th>
+                                        <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground">Funds Used</th>
                                     </tr>
                                 </thead>
                                 <tbody>

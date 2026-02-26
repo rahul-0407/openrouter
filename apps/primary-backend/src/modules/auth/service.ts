@@ -1,11 +1,11 @@
 
 import { prisma } from "db";
-import {jwt} from "@elysiajs/jwt"
+import { jwt } from "@elysiajs/jwt"
 
 export abstract class AuthService {
-    static async signup (email: string, password: string):Promise<string> {
+    static async signup(email: string, password: string): Promise<string> {
         const user = await prisma.user.create({
-            data:{
+            data: {
                 email,
                 password: await Bun.password.hash(password)
             }
@@ -13,28 +13,28 @@ export abstract class AuthService {
         return user.id.toString();
     }
 
-    static async signin (email: string, password: string): Promise<{correctCredentials: boolean, userId?:string}> {
+    static async signin(email: string, password: string): Promise<{ correctCredentials: boolean, userId?: string }> {
         const user = await prisma.user.findFirst({
-            where:{
+            where: {
                 email
             }
         })
 
-        if(!user){
-            return {correctCredentials:false};
+        if (!user) {
+            return { correctCredentials: false };
         }
 
-        if(!await Bun.password.verify(password, user.password)) return {correctCredentials: false};
+        if (!await Bun.password.verify(password, user.password)) return { correctCredentials: false };
 
-        return {correctCredentials:true, userId: user.id.toString()};
+        return { correctCredentials: true, userId: user.id.toString() };
     }
-    static async getUserDetails (id: number){
+    static async getUserDetails(id: number) {
         return prisma.user.findFirst({
-            where:{
+            where: {
                 id
             },
-            select:{
-                credits:true
+            select: {
+                walletBalance: true
             }
         })
     }

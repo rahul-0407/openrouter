@@ -1,0 +1,29 @@
+{
+  "name": "openrouter-sdk",
+  "version": "1.0.0",
+  "description": "TypeScript SDK for the OpenRouter LLM gateway",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target node && tsc --emitDeclarationOnly --declaration --outDir dist",
+    "dev": "tsc --watch --emitDeclarationOnly --declaration --outDir dist",
+    "check-types": "tsc --noEmit"
+  },
+  "keywords": ["openrouter", "llm", "ai", "sdk", "typescript"],
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "5.9.2"
+  }
+}
