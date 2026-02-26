@@ -1,0 +1,112 @@
+# curl Examples
+
+Use the OpenRouter API directly with curl. No SDK required.
+
+## Non-Streaming Chat
+
+```bash
+curl -X POST http://localhost:4000/api/v1/chat/completions \
+  -H "Authorization: Bearer sk-or-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemini-2.0-flash",
+    "messages": [
+      {"role": "user", "content": "What is TypeScript?"}
+    ],
+    "stream": false
+  }'
+```
+
+### Response
+
+```json
+{
+  "completions": {
+    "choices": [
+      {
+        "message": {
+          "content": "TypeScript is a typed superset of JavaScript..."
+        }
+      }
+    ]
+  },
+  "inputTokensConsumed": 10,
+  "outputTokensConsumed": 45
+}
+```
+
+## Streaming Chat
+
+```bash
+curl -X POST http://localhost:4000/api/v1/chat/completions \
+  -H "Authorization: Bearer sk-or-your-api-key" \
+  -H "Content-Type: application/json" \
+  -N \
+  -d '{
+    "model": "google/gemini-2.0-flash",
+    "messages": [
+      {"role": "user", "content": "Tell me a short story"}
+    ],
+    "stream": true
+  }'
+```
+
+> The `-N` flag disables curl's output buffering for real-time streaming.
+
+### Output
+
+```
+data: {"choices":[{"delta":{"content":"Once"}}]}
+
+data: {"choices":[{"delta":{"content":" upon"}}]}
+
+data: {"choices":[{"delta":{"content":" a time"}}]}
+
+data: [DONE]
+```
+
+## List Models
+
+```bash
+curl http://localhost:4000/models
+```
+
+## List Providers
+
+```bash
+curl http://localhost:4000/models/providers
+```
+
+## Model Providers with Pricing
+
+```bash
+curl http://localhost:4000/models/1/providers
+```
+
+## Multi-Turn Conversation
+
+```bash
+curl -X POST http://localhost:4000/api/v1/chat/completions \
+  -H "Authorization: Bearer sk-or-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemini-2.0-flash",
+    "messages": [
+      {"role": "user", "content": "My name is Alice"},
+      {"role": "assistant", "content": "Nice to meet you, Alice!"},
+      {"role": "user", "content": "What is my name?"}
+    ]
+  }'
+```
+
+## Using jq for Formatted Output
+
+```bash
+curl -s http://localhost:4000/api/v1/chat/completions \
+  -H "Authorization: Bearer sk-or-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemini-2.0-flash",
+    "messages": [{"role": "user", "content": "Hello"}]
+  }' | jq '.completions.choices[0].message.content'
+```

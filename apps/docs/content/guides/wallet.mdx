@@ -1,0 +1,65 @@
+# Wallet Billing Guide
+
+This guide covers the wallet balance system in detail.
+
+## Overview
+
+OpenRouter uses a wallet-based billing system. Your account has a real currency balance that is deducted per-request based on token usage.
+
+## Adding Funds
+
+### Via Dashboard
+
+1. Log in to the OpenRouter dashboard
+2. Navigate to **Wallet** in the sidebar
+3. Click **Add Funds**
+4. Each top-up adds 1,000 to your balance
+
+### Via API
+
+```bash
+curl -X POST http://localhost:4000/payments/onramp \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+## Checking Your Balance
+
+### Via Dashboard
+
+Your current balance is displayed on the Wallet page and the main Dashboard.
+
+### Via API
+
+```ts
+// Using the profile endpoint
+const profile = await fetch("http://localhost:4000/auth/profile", {
+  headers: { Authorization: `Bearer ${jwtToken}` },
+}).then((r) => r.json());
+
+console.log(`Balance: ${profile.walletBalance}`);
+```
+
+## Cost Breakdown
+
+Each request cost depends on:
+
+1. **Input tokens** — How many tokens are in your prompt
+2. **Output tokens** — How many tokens the model generates
+3. **Model pricing** — Each model has different per-token rates
+
+```
+Request cost = (inputTokens × inputCost + outputTokens × outputCost) / 10
+```
+
+## Preventing Overdrafts
+
+OpenRouter uses **atomic balance checks**. If your balance would go negative after a request, the deduction is skipped. The API returns a `402` status before processing if your balance is exactly zero.
+
+## Transaction History
+
+Every balance change is logged as a `WalletTransaction`:
+
+- **CREDIT** — Funds added (e.g., onramp top-up)
+- **DEBIT** — Funds used (e.g., LLM request)
+
+Each transaction records the amount, type, description, and timestamp.

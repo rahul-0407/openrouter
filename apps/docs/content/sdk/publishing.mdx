@@ -1,0 +1,91 @@
+# SDK Publishing Checklist
+
+Follow this checklist when publishing a new version of the OpenRouter TypeScript SDK to npm.
+
+## Pre-Publish
+
+- [ ] **Update version** in `packages/sdk-ts/package.json`
+
+  ```bash
+  cd packages/sdk-ts
+  npm version patch  # or minor, major
+  ```
+
+- [ ] **Update CHANGELOG** (if maintained)
+
+- [ ] **Run type check**
+
+  ```bash
+  cd packages/sdk-ts
+  npx tsc --noEmit
+  ```
+
+- [ ] **Build the package**
+
+  ```bash
+  bun run build
+  ```
+
+- [ ] **Verify dist output**
+
+  ```bash
+  ls dist/
+  # Should contain: index.js, index.mjs, index.d.ts, etc.
+  ```
+
+- [ ] **Check package contents**
+
+  ```bash
+  npm pack --dry-run
+  ```
+
+- [ ] **Ensure README.md is up to date**
+
+- [ ] **Ensure LICENSE file exists**
+
+## Publish
+
+- [ ] **Login to npm**
+
+  ```bash
+  npm login
+  ```
+
+- [ ] **Publish**
+
+  ```bash
+  npm publish --access public
+  ```
+
+- [ ] **Verify on npm**
+  ```bash
+  npm info openrouter-sdk
+  ```
+
+## Post-Publish
+
+- [ ] **Tag the release** in git
+
+  ```bash
+  git tag v$(node -p "require('./package.json').version")
+  git push --tags
+  ```
+
+- [ ] **Test installation** in a fresh project
+
+  ```bash
+  mkdir /tmp/test-sdk && cd /tmp/test-sdk
+  npm init -y
+  npm install openrouter-sdk
+  node -e "const { OpenRouter } = require('openrouter-sdk'); console.log('OK')"
+  ```
+
+- [ ] **Update docs** if API surface has changed
+
+## Versioning Guidelines
+
+| Change Type                       | Version Bump | Example       |
+| --------------------------------- | ------------ | ------------- |
+| Bug fix                           | `patch`      | 1.0.0 → 1.0.1 |
+| New feature (backward compatible) | `minor`      | 1.0.0 → 1.1.0 |
+| Breaking change                   | `major`      | 1.0.0 → 2.0.0 |

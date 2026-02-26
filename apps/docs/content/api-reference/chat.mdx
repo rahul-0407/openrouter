@@ -1,0 +1,89 @@
+# Chat API
+
+The Chat API is the primary endpoint for generating AI responses.
+
+## Endpoint
+
+```
+POST /api/v1/chat/completions
+```
+
+## Authentication
+
+```
+Authorization: Bearer sk-or-your-api-key
+```
+
+## Request Body
+
+| Field      | Type        | Required | Description                                  |
+| ---------- | ----------- | -------- | -------------------------------------------- |
+| `model`    | `string`    | Yes      | Model slug (e.g., `google/gemini-2.0-flash`) |
+| `messages` | `Message[]` | Yes      | Conversation history                         |
+| `stream`   | `boolean`   | No       | Enable SSE streaming (default: `false`)      |
+
+### Message Object
+
+| Field     | Type                    | Description          |
+| --------- | ----------------------- | -------------------- |
+| `role`    | `"user" \| "assistant"` | Who sent the message |
+| `content` | `string`                | Message text         |
+
+## Non-Streaming Response
+
+```json
+{
+  "completions": {
+    "choices": [
+      {
+        "message": {
+          "content": "Hello! How can I help you today?"
+        }
+      }
+    ]
+  },
+  "inputTokensConsumed": 12,
+  "outputTokensConsumed": 8
+}
+```
+
+## Example Request
+
+### curl
+
+```bash
+curl -X POST http://localhost:4000/api/v1/chat/completions \
+  -H "Authorization: Bearer sk-or-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemini-2.0-flash",
+    "messages": [
+      {"role": "user", "content": "What is TypeScript?"}
+    ],
+    "stream": false
+  }'
+```
+
+### TypeScript SDK
+
+```ts
+import { OpenRouter } from "openrouter-sdk";
+
+const client = new OpenRouter({ apiKey: "sk-or-..." });
+
+const response = await client.chat({
+  model: "google/gemini-2.0-flash",
+  messages: [{ role: "user", content: "What is TypeScript?" }],
+});
+
+console.log(response.completions.choices[0].message.content);
+```
+
+## Error Responses
+
+| Status | Body                                           | Cause                   |
+| ------ | ---------------------------------------------- | ----------------------- |
+| `400`  | `{ "message": "..." }`                         | Invalid request body    |
+| `401`  | `{ "message": "Invalid api key" }`             | Bad or missing API key  |
+| `402`  | `{ "message": "Insufficient wallet balance" }` | Balance too low         |
+| `500`  | `{ "message": "..." }`                         | Upstream provider error |

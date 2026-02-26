@@ -1,0 +1,60 @@
+# Providers
+
+OpenRouter abstracts away the complexity of working with multiple LLM providers.
+
+## What is a Provider?
+
+A **provider** is a backend service that hosts and serves LLM models. Examples include OpenAI, Google AI, and others. Each provider has different:
+
+- API formats and authentication
+- Pricing structures
+- Rate limits and quotas
+- Availability and latency
+
+OpenRouter handles all of this for you — you just specify the model slug.
+
+## Provider Routing
+
+When you make a request, OpenRouter:
+
+1. Resolves the model slug to available providers
+2. Selects the provider based on availability and cost
+3. Translates your request into the provider's format
+4. Returns a normalized response
+
+```
+Your Request                  OpenRouter                Provider
+    │                            │                         │
+    ├── model: "google/..."  ──▶ ├── Route to Google ──▶  │
+    │                            │                         │
+    │                            ├── Translate format      │
+    │                            │                         │
+    ◀── Normalized response ◀── ◀── Raw response  ◀──────┤
+```
+
+## Listing Providers
+
+```bash
+curl http://localhost:4000/models/providers
+```
+
+Response:
+
+```json
+{
+  "providers": [
+    { "id": "1", "name": "OpenAI", "website": "https://openai.com" },
+    { "id": "2", "name": "Google AI", "website": "https://ai.google" }
+  ]
+}
+```
+
+## Token Costs
+
+Each model-provider mapping has specific input and output token costs. You can query these:
+
+```bash
+curl http://localhost:4000/models/1/providers
+```
+
+This returns per-provider costs for the given model, allowing you to understand pricing.

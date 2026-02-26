@@ -1,0 +1,130 @@
+# Next.js Example
+
+Build a streaming chat page with Next.js and OpenRouter.
+
+## API Route
+
+Create `app/api/chat/route.ts`:
+
+```ts
+import { OpenRouter } from "openrouter-sdk";
+
+const client = new OpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY!,
+  baseUrl: process.env.OPENROUTER_BASE_URL || "http://localhost:4000",
+  defaultModel: "google/gemini-2.0-flash",
+});
+
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+
+  const encoder = new TextEncoder();
+  const readable = new ReadableStream({
+    async start(controller) {
+      try {
+        for await (const token of client.chatStream({ messages })) {
+          controller.enqueue(encoder.encode(token));
+        }
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(readable, {
+    headers: { "Content-Type": "text/plain; charset=utf-8" },
+  });
+}
+```
+
+## Chat Component
+
+Create `app/page.tsx`:
+
+```tsx
+"use client";
+
+import { useState, useRef, FormEvent } from "react";
+
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export default function Chat() {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
+
+    const userMessage: Message = { role: "user", content: input };
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
+    setIsLoading(true);
+
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: [...messages, userMessage],
+      }),
+    });
+
+    const reader = response.body!.getReader();
+    const decoder = new TextDecoder();
+    let assistantContent = "";
+
+    setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      assistantContent += decoder.decode(value, { stream: true });
+      setMessages((prev) => [
+        ...prev.slice(0, -1),
+        { role: "assistant", content: assistantContent },
+      ]);
+    }
+
+    setIsLoading(false);
+  }
+
+  return (
+    <main style={{ maxWidth: 640, margin: "0 auto", padding: 24 }}>
+      <h1>Chat with OpenRouter</h1>
+      <div>
+        {messages.map((m, i) => (
+          <div key={i} style={{ margin: "12px 0" }}>
+            <strong>{m.role === "user" ? "You" : "AI"}:</strong>
+            <p>{m.content}</p>
+          </div>
+        ))}
+      </div>
+      <form onSubmit={handleSubmit} style={{ display: "flex", gap: 8 }}>
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Type a message..."
+          style={{ flex: 1, padding: 8 }}
+        />
+        <button type="submit" disabled={isLoading}>
+          {isLoading ? "..." : "Send"}
+        </button>
+      </form>
+    </main>
+  );
+}
+```
+
+## Environment Variables
+
+Add to `.env.local`:
+
+```
+OPENROUTER_API_KEY=sk-or-your-key
+OPENROUTER_BASE_URL=http://localhost:4000
+```

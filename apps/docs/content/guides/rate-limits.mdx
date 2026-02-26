@@ -1,0 +1,54 @@
+# Rate Limits
+
+OpenRouter applies rate limiting to ensure fair usage and system stability.
+
+## Current Limits
+
+Rate limits are applied per API key:
+
+| Resource         | Limit        | Window     |
+| ---------------- | ------------ | ---------- |
+| Chat completions | Configurable | Per minute |
+| Models listing   | Unlimited    | —          |
+
+> **Note:** Rate limits may vary based on your plan and deployment configuration.
+
+## Rate Limit Headers
+
+When rate limiting is enabled, responses include headers:
+
+| Header                  | Description                      |
+| ----------------------- | -------------------------------- |
+| `X-RateLimit-Limit`     | Maximum requests per window      |
+| `X-RateLimit-Remaining` | Requests remaining in window     |
+| `X-RateLimit-Reset`     | Timestamp when the window resets |
+
+## Handling Rate Limits
+
+### Retry with Backoff
+
+```ts
+async function chatWithRetry(client, request, maxRetries = 3) {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await client.chat(request);
+    } catch (err) {
+      if (err.status === 429 && attempt < maxRetries - 1) {
+        const delay = Math.pow(2, attempt) * 1000;
+        console.log(`Rate limited. Retrying in ${delay}ms...`);
+        await new Promise((r) => setTimeout(r, delay));
+      } else {
+        throw err;
+      }
+    }
+  }
+}
+```
+
+## Best Practices
+
+- **Batch requests** when possible instead of making many small calls
+- **Cache responses** for repeated queries
+- **Use streaming** for long responses — it holds one connection instead of polling
+- **Monitor usage** via the Metrics dashboard
+- **Implement backoff** for retries to avoid thundering herd problems

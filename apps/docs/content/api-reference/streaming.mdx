@@ -1,0 +1,123 @@
+# Streaming
+
+OpenRouter supports real-time token streaming via **Server-Sent Events (SSE)**.
+
+## Enabling Streaming
+
+Set `stream: true` in your request:
+
+```bash
+curl -X POST http://localhost:4000/api/v1/chat/completions \
+  -H "Authorization: Bearer sk-or-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemini-2.0-flash",
+    "messages": [{"role": "user", "content": "Tell me a story"}],
+    "stream": true
+  }'
+```
+
+## SSE Format
+
+The response is a stream of `data:` lines. Each line contains a JSON object:
+
+```
+data: {"choices":[{"delta":{"content":"Once"}}]}
+
+data: {"choices":[{"delta":{"content":" upon"}}]}
+
+data: {"choices":[{"delta":{"content":" a"}}]}
+
+data: {"choices":[{"delta":{"content":" time"}}]}
+
+data: [DONE]
+```
+
+### Token Event
+
+```json
+{ "choices": [{ "delta": { "content": "token text" } }] }
+```
+
+### Error Event (mid-stream)
+
+```json
+{ "error": { "message": "Stream interrupted" } }
+```
+
+### Termination
+
+The stream ends with:
+
+```
+data: [DONE]
+```
+
+## Parsing Tokens
+
+### JavaScript (native fetch)
+
+```js
+const response = await fetch("http://localhost:4000/api/v1/chat/completions", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer sk-or-your-api-key",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    model: "google/gemini-2.0-flash",
+    messages: [{ role: "user", content: "Tell me a story" }],
+    stream: true,
+  }),
+});
+
+const reader = response.body.getReader();
+const decoder = new TextDecoder();
+let buffer = "";
+
+while (true) {
+  const { done, value } = await reader.read();
+  if (done) break;
+
+  buffer += decoder.decode(value, { stream: true });
+  const lines = buffer.split("\n");
+  buffer = lines.pop();
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("data: ")) continue;
+
+    const payload = trimmed.slice(6);
+    if (payload === "[DONE]") break;
+
+    const event = JSON.parse(payload);
+    const token = event.choices?.[0]?.delta?.content;
+    if (token) process.stdout.write(token);
+  }
+}
+```
+
+### Using the SDK
+
+```ts
+import { OpenRouter } from "openrouter-sdk";
+
+const client = new OpenRouter({ apiKey: "sk-or-..." });
+
+for await (const token of client.chatStream({
+  model: "google/gemini-2.0-flash",
+  messages: [{ role: "user", content: "Tell me a story" }],
+})) {
+  process.stdout.write(token);
+}
+```
+
+The SDK handles all SSE parsing, buffering, and error detection automatically.
+
+## Response Headers
+
+| Header          | Value               |
+| --------------- | ------------------- |
+| `Content-Type`  | `text/event-stream` |
+| `Cache-Control` | `no-cache`          |
+| `Connection`    | `keep-alive`        |

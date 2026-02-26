@@ -1,0 +1,59 @@
+# Quickstart
+
+Get your first OpenRouter API call working in under 2 minutes.
+
+## Prerequisites
+
+- An OpenRouter account with an API key
+- [Node.js](https://nodejs.org) 18+ or [Bun](https://bun.sh) installed
+
+## Option 1: Using the SDK
+
+Install the SDK:
+
+```bash
+npm install openrouter-sdk
+```
+
+Create a file called `hello.ts`:
+
+```ts
+import { OpenRouter } from "openrouter-sdk";
+
+const client = new OpenRouter({
+  apiKey: "sk-or-your-api-key",
+  baseUrl: "http://localhost:4000",
+});
+
+const response = await client.chat({
+  model: "google/gemini-2.0-flash",
+  messages: [{ role: "user", content: "Say hello in 3 languages" }],
+});
+
+console.log(response.completions.choices[0].message.content);
+```
+
+Run it:
+
+```bash
+npx tsx hello.ts
+```
+
+## Option 2: Using curl
+
+```bash
+curl http://localhost:4000/api/v1/chat/completions \
+  -H "Authorization: Bearer sk-or-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemini-2.0-flash",
+    "messages": [{"role": "user", "content": "Say hello in 3 languages"}],
+    "stream": false
+  }'
+```
+
+## Next Steps
+
+- [Authentication](/getting-started/authentication) — Learn about API key security
+- [Chat API](/api-reference/chat) — Full endpoint reference
+- [Streaming](/api-reference/streaming) — Real-time token delivery

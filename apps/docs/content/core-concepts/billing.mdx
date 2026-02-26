@@ -1,0 +1,66 @@
+# Billing
+
+OpenRouter uses a **wallet balance** system for billing. You pay for what you use based on token consumption.
+
+## How Billing Works
+
+1. **Top up** your wallet balance via the dashboard
+2. **Make requests** — cost is calculated per-request based on tokens used
+3. **Balance deducted** atomically after each successful request
+
+## Cost Calculation
+
+Each request cost is determined by:
+
+```
+cost = (inputTokens × inputTokenCost + outputTokens × outputTokenCost) / 10
+```
+
+Token costs vary by model and provider. Check the [Models API](/api-reference/models-api) for current pricing.
+
+## Wallet Balance
+
+Your wallet balance is a real currency value (not abstract credits). View it in the dashboard or via the API:
+
+```bash
+curl http://localhost:4000/auth/profile \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+Response includes:
+
+```json
+{
+  "walletBalance": 950.5
+}
+```
+
+## Insufficient Balance
+
+If your balance is too low for a request, the API returns:
+
+```json
+{
+  "message": "Insufficient wallet balance"
+}
+```
+
+**HTTP Status:** `402 Payment Required`
+
+## Transaction History
+
+Every wallet change is recorded as a `WalletTransaction`:
+
+| Type     | Description      |
+| -------- | ---------------- |
+| `CREDIT` | Wallet top-up    |
+| `DEBIT`  | LLM usage charge |
+
+## Adding Funds
+
+Use the dashboard **Wallet** page or call the onramp endpoint:
+
+```bash
+curl -X POST http://localhost:4000/payments/onramp \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```

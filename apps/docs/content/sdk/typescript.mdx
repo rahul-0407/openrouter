@@ -1,0 +1,116 @@
+# TypeScript SDK
+
+The official TypeScript SDK for OpenRouter. Zero dependencies, strongly typed, and fast.
+
+## Installation
+
+```bash
+npm install openrouter-sdk
+# or
+bun add openrouter-sdk
+```
+
+## Initialization
+
+```ts
+import { OpenRouter } from "openrouter-sdk";
+
+const client = new OpenRouter({
+  apiKey: "sk-or-your-api-key",
+  baseUrl: "http://localhost:4000", // optional, defaults to localhost:4000
+  defaultModel: "google/gemini-2.0-flash", // optional
+});
+```
+
+## Methods
+
+### `chat(request)`
+
+Send a non-streaming chat completion request.
+
+```ts
+const response = await client.chat({
+  model: "google/gemini-2.0-flash",
+  messages: [
+    { role: "system", content: "You are a helpful assistant." },
+    { role: "user", content: "What is the speed of light?" },
+  ],
+});
+
+console.log(response.completions.choices[0].message.content);
+console.log(
+  `Tokens: ${response.inputTokensConsumed} in, ${response.outputTokensConsumed} out`,
+);
+```
+
+### `chatStream(request)`
+
+Send a streaming request. Returns an `AsyncGenerator<string>` that yields tokens.
+
+```ts
+for await (const token of client.chatStream({
+  messages: [{ role: "user", content: "Write a haiku about coding" }],
+})) {
+  process.stdout.write(token);
+}
+console.log(); // newline
+```
+
+### `models()`
+
+List all available models.
+
+```ts
+const models = await client.models();
+
+for (const model of models) {
+  console.log(`${model.slug} — ${model.company.name}`);
+}
+```
+
+## Error Handling
+
+The SDK throws `OpenRouterError` for API errors:
+
+```ts
+import { OpenRouter, OpenRouterError } from "openrouter-sdk";
+
+try {
+  await client.chat({ messages: [{ role: "user", content: "Hi" }] });
+} catch (err) {
+  if (err instanceof OpenRouterError) {
+    console.error(`HTTP ${err.status}: ${err.message}`);
+    // err.body contains the raw response body
+  }
+}
+```
+
+## Types
+
+All types are exported for use in your application:
+
+```ts
+import type {
+  Message,
+  ChatRequest,
+  ChatResponse,
+  Model,
+  OpenRouterConfig,
+} from "openrouter-sdk";
+```
+
+## Advanced: SSE Parser
+
+The internal SSE parser is exported for custom streaming implementations:
+
+```ts
+import { parseSSEStream } from "openrouter-sdk";
+
+const response = await fetch("http://localhost:4000/api/v1/chat/completions", {
+  /* ... */
+});
+
+for await (const token of parseSSEStream(response)) {
+  // handle token
+}
+```

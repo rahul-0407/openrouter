@@ -1,0 +1,130 @@
+# SDK Examples
+
+Practical, copy-paste examples using the OpenRouter TypeScript SDK.
+
+## Simple Chat
+
+```ts
+import { OpenRouter } from "openrouter-sdk";
+
+const client = new OpenRouter({ apiKey: process.env.OPENROUTER_API_KEY! });
+
+const res = await client.chat({
+  model: "google/gemini-2.0-flash",
+  messages: [{ role: "user", content: "Explain recursion in one sentence" }],
+});
+
+console.log(res.completions.choices[0].message.content);
+```
+
+## Streaming Chat
+
+```ts
+import { OpenRouter } from "openrouter-sdk";
+
+const client = new OpenRouter({ apiKey: process.env.OPENROUTER_API_KEY! });
+
+process.stdout.write("AI: ");
+
+for await (const token of client.chatStream({
+  model: "google/gemini-2.0-flash",
+  messages: [{ role: "user", content: "Tell me a short joke" }],
+})) {
+  process.stdout.write(token);
+}
+
+console.log();
+```
+
+## Default Model Usage
+
+```ts
+import { OpenRouter } from "openrouter-sdk";
+
+const client = new OpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY!,
+  defaultModel: "google/gemini-2.0-flash",
+});
+
+// No model needed — uses the default
+const res = await client.chat({
+  messages: [{ role: "user", content: "Hello!" }],
+});
+```
+
+## Multi-Turn Conversation
+
+```ts
+import { OpenRouter, type Message } from "openrouter-sdk";
+
+const client = new OpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY!,
+  defaultModel: "google/gemini-2.0-flash",
+});
+
+const history: Message[] = [
+  { role: "system", content: "You are a pirate. Respond like one." },
+];
+
+async function ask(question: string) {
+  history.push({ role: "user", content: question });
+
+  const res = await client.chat({ messages: history });
+  const reply = res.completions.choices[0].message.content;
+
+  history.push({ role: "assistant", content: reply });
+  console.log(`🏴‍☠️: ${reply}`);
+}
+
+await ask("What's your name?");
+await ask("Where's the treasure?");
+```
+
+## Error Handling
+
+```ts
+import { OpenRouter, OpenRouterError } from "openrouter-sdk";
+
+const client = new OpenRouter({ apiKey: "bad-key" });
+
+try {
+  await client.chat({
+    model: "google/gemini-2.0-flash",
+    messages: [{ role: "user", content: "Hello" }],
+  });
+} catch (err) {
+  if (err instanceof OpenRouterError) {
+    switch (err.status) {
+      case 401:
+        console.error("Invalid API key");
+        break;
+      case 402:
+        console.error("Insufficient wallet balance — top up at /wallet");
+        break;
+      default:
+        console.error(`API error ${err.status}: ${err.message}`);
+    }
+  }
+}
+```
+
+## Collect Stream to String
+
+```ts
+import { OpenRouter } from "openrouter-sdk";
+
+const client = new OpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY!,
+  defaultModel: "google/gemini-2.0-flash",
+});
+
+let fullResponse = "";
+
+for await (const token of client.chatStream({
+  messages: [{ role: "user", content: "Write a limerick" }],
+})) {
+  fullResponse += token;
+}
+
+console.log(fullResponse);
+```

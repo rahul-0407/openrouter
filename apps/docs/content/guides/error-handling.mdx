@@ -1,0 +1,78 @@
+# Error Handling
+
+How to handle errors from the OpenRouter API.
+
+## HTTP Status Codes
+
+| Status | Meaning               | Common Cause                            |
+| ------ | --------------------- | --------------------------------------- |
+| `400`  | Bad Request           | Invalid JSON or missing required fields |
+| `401`  | Unauthorized          | Invalid or missing API key              |
+| `402`  | Payment Required      | Insufficient wallet balance             |
+| `500`  | Internal Server Error | Upstream provider failure               |
+
+## Error Response Format
+
+All errors return a JSON body:
+
+```json
+{
+  "message": "Human-readable error description"
+}
+```
+
+## SDK Error Handling
+
+The SDK throws `OpenRouterError` with `status` and `body` properties:
+
+```ts
+import { OpenRouter, OpenRouterError } from "openrouter-sdk";
+
+const client = new OpenRouter({ apiKey: "sk-or-..." });
+
+try {
+  await client.chat({
+    model: "google/gemini-2.0-flash",
+    messages: [{ role: "user", content: "Hello" }],
+  });
+} catch (err) {
+  if (err instanceof OpenRouterError) {
+    console.error(`Status: ${err.status}`);
+    console.error(`Message: ${err.message}`);
+    console.error(`Body:`, err.body);
+  }
+}
+```
+
+## Streaming Errors
+
+During streaming, errors can occur mid-stream. They are delivered as SSE events:
+
+```
+data: {"error":{"message":"Stream interrupted"}}
+data: [DONE]
+```
+
+The SDK handles these automatically and throws an error from the async generator.
+
+## Common Errors and Fixes
+
+### "Invalid api key"
+
+- Verify your API key starts with the correct prefix
+- Check the key hasn't been revoked in the dashboard
+
+### "Insufficient wallet balance"
+
+- Add funds via the dashboard Wallet page
+- Check your balance before making requests
+
+### "No model found"
+
+- Verify the model slug is correct (e.g., `google/gemini-2.0-flash`)
+- Check available models with `client.models()`
+
+### Provider Timeouts
+
+- Retry with exponential backoff
+- Consider using a different model if a provider is consistently slow

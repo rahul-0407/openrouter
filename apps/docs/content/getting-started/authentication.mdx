@@ -1,0 +1,56 @@
+# Authentication
+
+All API requests to OpenRouter require authentication via an API key.
+
+## Getting an API Key
+
+1. Sign up at the OpenRouter dashboard
+2. Navigate to **API Keys** in the sidebar
+3. Click **Create New Key**
+4. Copy the generated key (starts with `sk-or-`)
+
+> **Important:** Store your API key securely. Never expose it in client-side code or commit it to version control.
+
+## Using Your API Key
+
+Include the API key in the `Authorization` header as a Bearer token:
+
+```
+Authorization: Bearer sk-or-your-api-key
+```
+
+### curl Example
+
+```bash
+curl http://localhost:4000/api/v1/chat/completions \
+  -H "Authorization: Bearer sk-or-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "google/gemini-2.0-flash", "messages": [{"role": "user", "content": "Hello"}]}'
+```
+
+### SDK Example
+
+```ts
+import { OpenRouter } from "openrouter-sdk";
+
+const client = new OpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY!,
+});
+```
+
+## Security Best Practices
+
+| Practice                  | Description                               |
+| ------------------------- | ----------------------------------------- |
+| **Environment variables** | Store keys in `.env` files, never in code |
+| **Server-side only**      | Never send API keys to the browser        |
+| **Rotate regularly**      | Regenerate keys if you suspect a leak     |
+| **Least privilege**       | Create separate keys per application      |
+
+## Error Responses
+
+| Status                 | Meaning                     |
+| ---------------------- | --------------------------- |
+| `401 Unauthorized`     | Missing or invalid API key  |
+| `402 Payment Required` | Insufficient wallet balance |
+| `403 Forbidden`        | API key disabled or revoked |

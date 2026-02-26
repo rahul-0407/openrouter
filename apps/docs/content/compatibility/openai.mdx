@@ -1,0 +1,66 @@
+# OpenAI SDK Compatibility
+
+OpenRouter is compatible with the OpenAI SDK. Point it at your OpenRouter instance and use it like you would OpenAI.
+
+## Setup
+
+```bash
+npm install openai
+```
+
+### Using the SDK Helper
+
+```ts
+import OpenAI from "openai";
+import { createOpenAICompatibleClient } from "openrouter-sdk";
+
+const config = createOpenAICompatibleClient({
+  apiKey: "sk-or-your-api-key",
+  baseUrl: "http://localhost:4000",
+});
+
+const openai = new OpenAI(config);
+```
+
+### Manual Configuration
+
+```ts
+import OpenAI from "openai";
+
+const openai = new OpenAI({
+  apiKey: "sk-or-your-api-key",
+  baseURL: "http://localhost:4000/api/v1",
+});
+```
+
+## Chat Completion
+
+```ts
+const completion = await openai.chat.completions.create({
+  model: "google/gemini-2.0-flash",
+  messages: [{ role: "user", content: "What is the meaning of life?" }],
+});
+
+console.log(completion.choices[0].message.content);
+```
+
+## Streaming
+
+```ts
+const stream = await openai.chat.completions.create({
+  model: "google/gemini-2.0-flash",
+  messages: [{ role: "user", content: "Tell me a story" }],
+  stream: true,
+});
+
+for await (const chunk of stream) {
+  const content = chunk.choices[0]?.delta?.content;
+  if (content) process.stdout.write(content);
+}
+```
+
+## Why Use This?
+
+- **Drop-in replacement** — Existing OpenAI code works with minimal changes
+- **Ecosystem compatibility** — Libraries built for OpenAI work out of the box
+- **Migration path** — Switch between OpenAI and OpenRouter easily

@@ -1,0 +1,97 @@
+# Go SDK Design
+
+This page provides a design prompt for generating an OpenRouter Go SDK using AI.
+
+## Design Prompt
+
+Use the following prompt to generate a production-grade Go SDK for OpenRouter:
+
+---
+
+**Prompt:**
+
+```
+Design and implement a Go SDK for the OpenRouter LLM gateway.
+
+## Requirements
+
+### Package Structure
+- Package name: `openrouter`
+- Single module: `github.com/YOUR_ORG/openrouter-go`
+- Files: client.go, chat.go, models.go, stream.go, types.go, errors.go
+
+### Client
+- Constructor: `NewClient(apiKey string, opts ...Option)`
+- Options: WithBaseURL(url), WithHTTPClient(client), WithDefaultModel(model)
+- Must be safe for concurrent use
+
+### Chat (Non-Streaming)
+- Method: `client.Chat(ctx context.Context, req *ChatRequest) (*ChatResponse, error)`
+- POST to `/api/v1/chat/completions` with `stream: false`
+- Return parsed JSON response
+
+### Chat (Streaming)
+- Method: `client.ChatStream(ctx context.Context, req *ChatRequest) (*Stream, error)`
+- Return a Stream type with:
+  - `Next() (string, error)` — returns next token
+  - `Close() error` — closes the stream
+  - Implements `io.Closer`
+- Parse SSE `data:` lines, detect `[DONE]`
+
+### Models
+- Method: `client.Models(ctx context.Context) ([]Model, error)`
+- GET `/models`
+
+### Types
+- Message: Role (string), Content (string)
+- ChatRequest: Model, Messages, Stream
+- ChatResponse: Completions with Choices
+- Model: ID, Name, Slug, Company
+- Stream: wraps http.Response body
+
+### Error Handling
+- Custom `APIError` type with StatusCode, Message, Body
+- Wrap HTTP errors with context
+
+### Design Principles
+- Zero external dependencies (stdlib only)
+- Context support for cancellation
+- Idiomatic Go (interfaces, error handling, options pattern)
+- `go vet` and `golint` clean
+- Unit testable with httptest
+
+### Example Usage
+
+func main() {
+    client := openrouter.NewClient("sk-or-...",
+        openrouter.WithBaseURL("http://localhost:4000"),
+    )
+
+    // Non-streaming
+    resp, err := client.Chat(context.Background(), &openrouter.ChatRequest{
+        Model:    "google/gemini-2.0-flash",
+        Messages: []openrouter.Message{{Role: "user", Content: "Hello"}},
+    })
+
+    // Streaming
+    stream, err := client.ChatStream(context.Background(), &openrouter.ChatRequest{
+        Model:    "google/gemini-2.0-flash",
+        Messages: []openrouter.Message{{Role: "user", Content: "Tell me a story"}},
+    })
+    defer stream.Close()
+    for {
+        token, err := stream.Next()
+        if err == io.EOF { break }
+        fmt.Print(token)
+    }
+}
+```
+
+---
+
+## Notes
+
+- The Go SDK should mirror the TypeScript SDK's functionality
+- Use the functional options pattern for configuration
+- SSE parsing should handle buffered reads and partial lines
+- All exported types should have GoDoc comments

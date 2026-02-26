@@ -1,0 +1,60 @@
+# Node.js Example
+
+A simple Node.js script using the OpenRouter SDK.
+
+## Setup
+
+```bash
+mkdir openrouter-example && cd openrouter-example
+npm init -y
+npm install openrouter-sdk
+```
+
+## `index.ts`
+
+```ts
+import { OpenRouter } from "openrouter-sdk";
+
+const client = new OpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY!,
+  baseUrl: "http://localhost:4000",
+  defaultModel: "google/gemini-2.0-flash",
+});
+
+async function main() {
+  // List available models
+  console.log("📋 Available models:");
+  const models = await client.models();
+  models.forEach((m) => console.log(`  - ${m.slug}`));
+  console.log();
+
+  // Non-streaming chat
+  console.log("💬 Chat (non-streaming):");
+  const response = await client.chat({
+    messages: [{ role: "user", content: "What is Node.js in one sentence?" }],
+  });
+  console.log(`  ${response.completions.choices[0].message.content}`);
+  console.log(
+    `  Tokens: ${response.inputTokensConsumed} in, ${response.outputTokensConsumed} out`,
+  );
+  console.log();
+
+  // Streaming chat
+  console.log("🌊 Chat (streaming):");
+  process.stdout.write("  ");
+  for await (const token of client.chatStream({
+    messages: [{ role: "user", content: "Write a haiku about JavaScript" }],
+  })) {
+    process.stdout.write(token);
+  }
+  console.log("\n");
+}
+
+main().catch(console.error);
+```
+
+## Run
+
+```bash
+OPENROUTER_API_KEY=sk-or-your-key npx tsx index.ts
+```

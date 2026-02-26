@@ -1,0 +1,44 @@
+# Welcome to OpenRouter
+
+OpenRouter is a **unified LLM gateway** that gives you a single API to access multiple AI model providers.
+
+## Why OpenRouter?
+
+- **One API, many models** — Switch between GPT, Gemini, Claude, and more with a single endpoint.
+- **Provider abstraction** — Never deal with provider-specific APIs again.
+- **Smart routing** — Requests are routed to the best available provider automatically.
+- **Wallet billing** — Simple pay-as-you-go billing with real-time balance tracking.
+- **Streaming support** — First-class SSE streaming for real-time token delivery.
+- **TypeScript SDK** — Strongly-typed client for fast developer onboarding.
+
+## Architecture
+
+```
+┌─────────────┐     ┌──────────────────┐     ┌──────────────┐
+│  Your App   │────▶│  OpenRouter API   │────▶│  Providers   │
+│  (SDK/HTTP) │◀────│  /api/v1/chat/... │◀────│  (OpenAI,    │
+└─────────────┘     └──────────────────┘     │   Gemini...) │
+                                              └──────────────┘
+```
+
+## Quick Example
+
+```ts
+import { OpenRouter } from "openrouter-sdk";
+
+const client = new OpenRouter({ apiKey: "sk-or-..." });
+
+const response = await client.chat({
+  model: "google/gemini-2.0-flash",
+  messages: [{ role: "user", content: "Hello!" }],
+});
+
+console.log(response.completions.choices[0].message.content);
+```
+
+## Next Steps
+
+- [Quickstart](/getting-started/quickstart) — Make your first API call in 2 minutes
+- [Authentication](/getting-started/authentication) — Get your API key
+- [Chat API](/api-reference/chat) — Full endpoint documentation
+- [TypeScript SDK](/sdk/typescript) — Install and use the SDK

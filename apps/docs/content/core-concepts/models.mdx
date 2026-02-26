@@ -1,0 +1,56 @@
+# Models
+
+OpenRouter provides access to models from multiple AI companies through a unified API.
+
+## How Models Work
+
+Each model on OpenRouter has:
+
+- **Name** — Human-readable identifier (e.g., "Gemini 2.0 Flash")
+- **Slug** — Machine identifier used in API calls (e.g., `google/gemini-2.0-flash`)
+- **Company** — The organization that created the model
+
+When you make a chat request, you specify the model slug and OpenRouter routes your request to the best available provider.
+
+## Listing Models
+
+```ts
+const client = new OpenRouter({ apiKey: "sk-or-..." });
+const models = await client.models();
+
+for (const model of models) {
+  console.log(`${model.slug} by ${model.company.name}`);
+}
+```
+
+Or via the API:
+
+```bash
+curl http://localhost:4000/models
+```
+
+## Supported Models
+
+The available models depend on your OpenRouter deployment. Common examples:
+
+| Slug                      | Provider | Description                  |
+| ------------------------- | -------- | ---------------------------- |
+| `google/gemini-2.0-flash` | Google   | Fast, efficient Gemini model |
+| `openai/gpt-4o`           | OpenAI   | GPT-4o multimodal            |
+| `openai/gpt-4o-mini`      | OpenAI   | Compact GPT-4o variant       |
+
+## Default Model
+
+With the SDK, you can set a default model to avoid repeating it:
+
+```ts
+const client = new OpenRouter({
+  apiKey: "sk-or-...",
+  defaultModel: "google/gemini-2.0-flash",
+});
+
+// No need to specify model each time
+const res = await client.chat({
+  messages: [{ role: "user", content: "Hello!" }],
+});
+```

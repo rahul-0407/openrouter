@@ -1,0 +1,91 @@
+# Models API
+
+Retrieve available models and their provider information.
+
+## List Models
+
+```
+GET /models
+```
+
+Returns all models available on the gateway.
+
+### Response
+
+```json
+{
+  "models": [
+    {
+      "id": "1",
+      "name": "Gemini 2.0 Flash",
+      "slug": "google/gemini-2.0-flash",
+      "company": {
+        "id": "1",
+        "name": "Google",
+        "website": "https://ai.google"
+      }
+    }
+  ]
+}
+```
+
+### curl
+
+```bash
+curl http://localhost:4000/models
+```
+
+### SDK
+
+```ts
+const models = await client.models();
+models.forEach((m) => console.log(m.slug, m.company.name));
+```
+
+---
+
+## List Providers
+
+```
+GET /models/providers
+```
+
+Returns all configured providers.
+
+### Response
+
+```json
+{
+  "providers": [
+    { "id": "1", "name": "OpenAI", "website": "https://openai.com" },
+    { "id": "2", "name": "Google AI", "website": "https://ai.google" }
+  ]
+}
+```
+
+---
+
+## Model Providers
+
+```
+GET /models/:id/providers
+```
+
+Returns the providers available for a specific model, including token costs.
+
+### Response
+
+```json
+{
+  "providers": [
+    {
+      "id": "1",
+      "providerId": "2",
+      "providerName": "Google AI",
+      "providerWebsite": "https://ai.google",
+      "inputTokenCost": 0.001,
+      "outputTokenCost": 0.002
+    }
+  ]
+}
+```
