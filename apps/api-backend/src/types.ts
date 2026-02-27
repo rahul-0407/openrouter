@@ -1,7 +1,7 @@
 import { t } from "elysia"
 
 export const Message = t.Array(t.Object({
-    role: t.Enum({ user: 'user', assistant: 'assistant' }),
+    role: t.Enum({ user: 'user', assistant: 'assistant', system: 'system' }),
     content: t.String()
 }))
 
@@ -10,5 +10,17 @@ export type Messages = typeof Message.static
 export const Conversation = t.Object({
     model: t.String(),
     messages: Message,
-    stream: t.Optional(t.Boolean())
+    stream: t.Optional(t.Boolean()),
+    temperature: t.Optional(t.Number()),
+    max_tokens: t.Optional(t.Number()),
 })
+
+// Permissive variant: accepts any additional fields OpenAI SDKs may send
+// (top_p, frequency_penalty, presence_penalty, etc.)
+export const OpenAIConversation = t.Object({
+    model: t.String(),
+    messages: Message,
+    stream: t.Optional(t.Boolean()),
+    temperature: t.Optional(t.Number()),
+    max_tokens: t.Optional(t.Number()),
+}, { additionalProperties: true })

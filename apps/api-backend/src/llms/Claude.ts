@@ -11,11 +11,16 @@ export class Claude extends BaseLlm {
 
   static async chat(model: string, messages: Messages): Promise<LlmResponse> {
 
+    const systemMessages = messages.filter(m => m.role === "system");
+    const nonSystemMessages = messages.filter(m => m.role !== "system");
+    const systemPrompt = systemMessages.map(m => m.content).join("\n");
+
     const response = await client.messages.create({
       model,
       max_tokens: 2048,
-      messages: messages.map(m => ({
-        role: m.role,
+      ...(systemPrompt ? { system: systemPrompt } : {}),
+      messages: nonSystemMessages.map(m => ({
+        role: m.role as "user" | "assistant",
         content: m.content
       }))
     });
@@ -33,11 +38,16 @@ export class Claude extends BaseLlm {
 
   static async chatStream(model: string, messages: Messages): Promise<LlmStreamResult> {
 
+    const systemMessages = messages.filter(m => m.role === "system");
+    const nonSystemMessages = messages.filter(m => m.role !== "system");
+    const systemPrompt = systemMessages.map(m => m.content).join("\n");
+
     const stream = client.messages.stream({
       model,
       max_tokens: 2048,
-      messages: messages.map(m => ({
-        role: m.role,
+      ...(systemPrompt ? { system: systemPrompt } : {}),
+      messages: nonSystemMessages.map(m => ({
+        role: m.role as "user" | "assistant",
         content: m.content
       }))
     });
