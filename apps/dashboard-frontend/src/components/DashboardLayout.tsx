@@ -8,15 +8,22 @@ import {
     MessageSquare,
     Zap,
     LogOut,
+    BookOpen,
+    ExternalLink,
+    ShieldCheck,
 } from "lucide-react";
+
+const DOCS_URL = "http://localhost:3002";
 
 const navItems = [
     { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { label: "API Keys", href: "/api-keys", icon: Key },
     { label: "Wallet", href: "/wallet", icon: Wallet },
     { label: "Metrics", href: "/metrics", icon: BarChart3 },
+    { label: "Health", href: "/dashboard/provider-health", icon: ShieldCheck },
     { label: "Chat", href: "/chat", icon: MessageSquare },
-];
+    { label: "Docs", href: DOCS_URL, icon: BookOpen, external: true },
+] as const;
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
     const location = useLocation();
@@ -39,16 +46,34 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 <nav className="flex-1 px-3 py-4 space-y-1">
                     {navItems.map((item) => {
                         const isActive = location.pathname === item.href;
+                        const classes = cn(
+                            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                            isActive
+                                ? "bg-primary/10 text-primary"
+                                : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                        );
+
+                        if ('external' in item && item.external) {
+                            return (
+                                <a
+                                    key={item.href}
+                                    href={item.href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={classes}
+                                >
+                                    <item.icon className="size-4" />
+                                    {item.label}
+                                    <ExternalLink className="size-3 ml-auto text-muted-foreground/50" />
+                                </a>
+                            );
+                        }
+
                         return (
                             <Link
                                 key={item.href}
                                 to={item.href}
-                                className={cn(
-                                    "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                                    isActive
-                                        ? "bg-primary/10 text-primary"
-                                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                                )}
+                                className={classes}
                             >
                                 <item.icon className="size-4" />
                                 {item.label}

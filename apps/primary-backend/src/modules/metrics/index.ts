@@ -89,3 +89,68 @@ export const app = new Elysia({ prefix: "/metrics" })
             500: MetricsModel.errorResponseSchema,
         }
     })
+    // ── New Metrics Endpoints ────────────────────────────────────────
+    .get("/error-rate-over-time", async ({ userId, query, status }) => {
+        try {
+            const range = query.range ?? "7d";
+            return await MetricsService.getErrorRateOverTime(Number(userId), range);
+        } catch (e) {
+            return status(500, { message: "Failed to fetch error rate over time" });
+        }
+    }, {
+        query: t.Object({
+            range: t.Optional(t.String())
+        }),
+        response: {
+            200: MetricsModel.errorRateOverTimeResponseSchema,
+            500: MetricsModel.errorResponseSchema,
+        }
+    })
+    .get("/cost-over-time", async ({ userId, query, status }) => {
+        try {
+            const range = query.range ?? "7d";
+            return await MetricsService.getCostOverTime(Number(userId), range);
+        } catch (e) {
+            return status(500, { message: "Failed to fetch cost over time" });
+        }
+    }, {
+        query: t.Object({
+            range: t.Optional(t.String())
+        }),
+        response: {
+            200: MetricsModel.costOverTimeResponseSchema,
+            500: MetricsModel.errorResponseSchema,
+        }
+    })
+    .get("/latency-over-time", async ({ userId, query, status }) => {
+        try {
+            const range = query.range ?? "7d";
+            return await MetricsService.getLatencyOverTime(Number(userId), range);
+        } catch (e) {
+            return status(500, { message: "Failed to fetch latency over time" });
+        }
+    }, {
+        query: t.Object({
+            range: t.Optional(t.String())
+        }),
+        response: {
+            200: MetricsModel.latencyOverTimeResponseSchema,
+            500: MetricsModel.errorResponseSchema,
+        }
+    })
+    .get("/token-usage-over-time", async ({ userId, query, status }) => {
+        try {
+            const range = query.range ?? "7d";
+            return await MetricsService.getTokenUsageOverTime(Number(userId), range);
+        } catch (e) {
+            return status(500, { message: "Failed to fetch token usage over time" });
+        }
+    }, {
+        query: t.Object({
+            range: t.Optional(t.String())
+        }),
+        response: {
+            200: MetricsModel.tokenUsageOverTimeResponseSchema,
+            500: MetricsModel.errorResponseSchema,
+        }
+    })

@@ -8,6 +8,7 @@ import { Credits } from "./pages/Credits";
 import { ApiKeys } from "./pages/ApiKeys";
 import { Landing } from "./pages/Landing";
 import { Metrics } from "./pages/Metrics";
+import { ProviderHealth } from "./pages/ProviderHealth";
 import { Chat } from "./pages/Chat";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ElysiaClientContextProvider } from "./providers/Eden";
@@ -35,6 +36,7 @@ export function App() {
               <Route path={"/wallet"} element={<Credits />} /> 
               <Route path={"/api-keys"} element={<ApiKeys />} />
               <Route path={"/metrics"} element={<Metrics />} />
+              <Route path={"/dashboard/provider-health"} element={<ProviderHealth />} />
               <Route path={"/chat"} element={<Chat />} /> 
             </Routes>
           </BrowserRouter>

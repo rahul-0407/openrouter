@@ -21,6 +21,7 @@ type Model = {
     id: string;
     name: string;
     slug: string;
+    available: boolean;
     company: { id: string; name: string; website: string };
 };
 
@@ -111,9 +112,14 @@ export function Chat() {
         fetch(`${BACKEND_BASE}/models`, { credentials: "include" })
             .then((r) => r.json())
             .then((data) => {
-                setModels(data.models ?? []);
-                if (data.models?.length > 0) {
-                    setSelectedModel(data.models[0].slug);
+                const allModels = data.models ?? [];
+                setModels(allModels);
+                // Auto-select first available model
+                const firstAvailable = allModels.find((m: Model) => m.available);
+                if (firstAvailable) {
+                    setSelectedModel(firstAvailable.slug);
+                } else if (allModels.length > 0) {
+                    setSelectedModel(allModels[0].slug);
                 }
             })
             .catch(() => setError("Failed to load models"))
@@ -226,13 +232,25 @@ export function Chat() {
                             </div>
                         ) : (
                             <Select value={selectedModel} onValueChange={setSelectedModel}>
-                                <SelectTrigger className="w-[280px] bg-black">
+                                <SelectTrigger className="w-[280px] bg-card/50 border-border/50">
                                     <SelectValue placeholder="Select a model" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {models.map((m) => (
-                                        <SelectItem key={m.slug} value={m.slug}>
-                                            <span className=" font-mono text-xs text-white">{m.slug}</span>
+                                        <SelectItem
+                                            key={m.slug}
+                                            value={m.slug}
+                                            disabled={!m.available}
+                                            className={!m.available ? "opacity-50 cursor-not-allowed" : ""}
+                                        >
+                                            <span className="font-mono text-xs" title={!m.available ? "Provider not available" : undefined}>
+                                                {m.slug}
+                                                {!m.available && (
+                                                    <span className="ml-2 text-muted-foreground/60 text-[10px] font-sans">
+                                                        (unavailable)
+                                                    </span>
+                                                )}
+                                            </span>
                                         </SelectItem>
                                     ))}
                                 </SelectContent>

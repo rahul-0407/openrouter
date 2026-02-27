@@ -47,6 +47,38 @@ export namespace MetricsModel {
         })
     );
 
+    export const errorRateOverTimeResponseSchema = t.Array(
+        t.Object({
+            date: t.String(),
+            totalRequests: t.Number(),
+            failedRequests: t.Number(),
+            errorRate: t.Number(),
+        })
+    );
+
+    export const costOverTimeResponseSchema = t.Array(
+        t.Object({
+            date: t.String(),
+            cost: t.Number(),
+        })
+    );
+
+    export const latencyOverTimeResponseSchema = t.Array(
+        t.Object({
+            date: t.String(),
+            avgLatencyMs: t.Number(),
+        })
+    );
+
+    export const tokenUsageOverTimeResponseSchema = t.Array(
+        t.Object({
+            date: t.String(),
+            inputTokens: t.Number(),
+            outputTokens: t.Number(),
+            totalTokens: t.Number(),
+        })
+    );
+
     export const errorResponseSchema = t.Object({
         message: t.String(),
     });

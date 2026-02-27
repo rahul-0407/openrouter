@@ -10,4 +10,5 @@ export default {
   guides: "Guides",
   compatibility: "Compatibility",
   examples: "Examples",
+  playground: "Playground",
 };

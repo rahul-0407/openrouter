@@ -6,6 +6,7 @@ export namespace ModelsModel {
             id: t.String(),
             name: t.String(),
             slug: t.String(),
+            available: t.Boolean(),
             company: t.Object({
                 id: t.String(),
                 name: t.String(),

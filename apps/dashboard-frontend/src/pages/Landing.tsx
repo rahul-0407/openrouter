@@ -10,7 +10,10 @@ import {
     BarChart3,
     Code2,
     Layers,
+    BookOpen,
 } from "lucide-react";
+
+const DOCS_URL = "http://localhost:3002";
 
 const features = [
     {
@@ -73,6 +76,12 @@ export function Landing() {
                         </span>
                     </div>
                     <div className="flex items-center gap-3">
+                        <Button variant="ghost" size="sm" asChild>
+                            <a href={DOCS_URL} target="_blank" rel="noopener noreferrer">
+                                <BookOpen className="size-3.5" />
+                                Docs
+                            </a>
+                        </Button>
                         <Button variant="ghost" size="sm" asChild>
                             <Link to="/signin">Sign in</Link>
                         </Button>
@@ -225,7 +234,7 @@ export function Landing() {
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {modelsQuery.data.models.slice(0, 9).map((model) => (
+                            {modelsQuery.data.models.slice(0, 9).map((model: { id: string; name: string; company: { name: string } }) => (
                                 <div
                                     key={model.id}
                                     className="flex items-center gap-3 rounded-lg border border-border/40 bg-card/20 px-4 py-3 hover:border-border/80 transition-colors"

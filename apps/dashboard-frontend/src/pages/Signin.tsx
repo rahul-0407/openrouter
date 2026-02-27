@@ -13,7 +13,9 @@ import {
     CardContent,
     CardFooter,
 } from "@/components/ui/card";
-import { ArrowRight, Mail, Lock, Loader2, AlertCircle, CheckCircle2, Zap } from "lucide-react";
+import { ArrowRight, Mail, Lock, Loader2, AlertCircle, CheckCircle2, Zap, BookOpen, ExternalLink } from "lucide-react";
+
+const DOCS_URL = "http://localhost:3002";
 
 export function Signin() {
     const emailRef = useRef<HTMLInputElement>(null);
@@ -82,13 +84,26 @@ export function Signin() {
             {/* Content */}
             <div className="relative z-10 w-full max-w-[420px] px-6">
                 {/* Brand */}
-                <div className="flex items-center justify-center gap-2.5 mb-10">
+                <div className="flex items-center justify-center gap-2.5 mb-6">
                     <div className="flex items-center justify-center size-9 rounded-lg bg-primary/10 border border-primary/20">
                         <Zap className="size-4 text-primary" />
                     </div>
                     <span className="text-lg font-semibold tracking-tight text-foreground">
                         OpenRouter
                     </span>
+                </div>
+
+                <div className="flex justify-center mb-6">
+                    <a
+                        href={DOCS_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                        <BookOpen className="size-3.5" />
+                        Docs
+                        <ExternalLink className="size-3" />
+                    </a>
                 </div>
 
                 <Card className="border-border/50 bg-card/80 backdrop-blur-xl shadow-2xl">

@@ -1,10 +1,40 @@
 import { prisma } from "db";
 import { Prisma } from "db/generated/prisma/client";
 
+// ── Simple in-memory cache (30s TTL) ─────────────────────────────────
+const cache = new Map<string, { data: any; expiry: number }>();
+const CACHE_TTL_MS = 30_000;
+
+function getCached<T>(key: string): T | null {
+    const entry = cache.get(key);
+    if (entry && entry.expiry > Date.now()) return entry.data as T;
+    cache.delete(key);
+    return null;
+}
+
+function setCache(key: string, data: any): void {
+    cache.set(key, { data, expiry: Date.now() + CACHE_TTL_MS });
+}
+
+function parseDays(range: string): number {
+    return range === "90d" ? 90 : range === "30d" ? 30 : 7;
+}
+
+function getSince(range: string): Date {
+    const since = new Date();
+    since.setDate(since.getDate() - parseDays(range));
+    return since;
+}
+
+// ── Metrics Service ──────────────────────────────────────────────────
+
 export abstract class MetricsService {
 
     static async getUserMetrics(userId: number) {
-        // Run aggregate + failed count + latency fetch in parallel
+        const cacheKey = `summary:${userId}`;
+        const cached = getCached<any>(cacheKey);
+        if (cached) return cached;
+
         const [result, failedResult, latencyRows] = await Promise.all([
             prisma.usageMetric.aggregate({
                 where: { userId },
@@ -35,7 +65,6 @@ export abstract class MetricsService {
             ? Math.round((failedResult / totalRequests) * 10000) / 100
             : 0;
 
-        // P95 latency calculation
         const latencies = latencyRows
             .map((r) => r.latencyMs)
             .sort((a, b) => a - b);
@@ -43,7 +72,7 @@ export abstract class MetricsService {
             ? latencies[Math.ceil(latencies.length * 0.95) - 1] ?? 0
             : 0;
 
-        return {
+        const data = {
             totalRequests,
             totalTokens: result._sum.totalTokens ?? 0,
             totalInputTokens: result._sum.inputTokens ?? 0,
@@ -53,12 +82,17 @@ export abstract class MetricsService {
             errorRate,
             p95LatencyMs,
         };
+
+        setCache(cacheKey, data);
+        return data;
     }
 
     static async getUsageOverTime(userId: number, range: string) {
-        const days = range === "90d" ? 90 : range === "30d" ? 30 : 7;
-        const since = new Date();
-        since.setDate(since.getDate() - days);
+        const cacheKey = `usage:${userId}:${range}`;
+        const cached = getCached<any>(cacheKey);
+        if (cached) return cached;
+
+        const since = getSince(range);
 
         const rows = await prisma.$queryRaw<
             Array<{
@@ -79,15 +113,22 @@ export abstract class MetricsService {
             ORDER BY date ASC
         `;
 
-        return rows.map((r) => ({
+        const data = rows.map((r) => ({
             date: r.date.toISOString().split("T")[0],
             requests: Number(r.requests),
             tokens: Number(r.tokens),
             cost: Math.round(r.cost * 100) / 100,
         }));
+
+        setCache(cacheKey, data);
+        return data;
     }
 
     static async getModelBreakdown(userId: number) {
+        const cacheKey = `models:${userId}`;
+        const cached = getCached<any>(cacheKey);
+        if (cached) return cached;
+
         const groups = await prisma.usageMetric.groupBy({
             by: ["model"],
             where: { userId },
@@ -96,15 +137,22 @@ export abstract class MetricsService {
             orderBy: { _count: { id: "desc" } },
         });
 
-        return groups.map((g) => ({
+        const data = groups.map((g) => ({
             model: g.model,
             requests: g._count.id,
             totalTokens: g._sum.totalTokens ?? 0,
             cost: Math.round((g._sum.cost ?? 0) * 100) / 100,
         }));
+
+        setCache(cacheKey, data);
+        return data;
     }
 
     static async getProviderBreakdown(userId: number) {
+        const cacheKey = `providers:${userId}`;
+        const cached = getCached<any>(cacheKey);
+        if (cached) return cached;
+
         const groups = await prisma.usageMetric.groupBy({
             by: ["provider"],
             where: { userId },
@@ -114,17 +162,23 @@ export abstract class MetricsService {
             orderBy: { _count: { id: "desc" } },
         });
 
-        return groups.map((g) => ({
+        const data = groups.map((g) => ({
             provider: g.provider,
             requests: g._count.id,
             totalTokens: g._sum.totalTokens ?? 0,
             cost: Math.round((g._sum.cost ?? 0) * 100) / 100,
             avgLatencyMs: Math.round(g._avg.latencyMs ?? 0),
         }));
+
+        setCache(cacheKey, data);
+        return data;
     }
 
     static async getThroughput(userId: number) {
-        // Requests per minute, bucketed by 5-minute intervals over the last 2 hours
+        const cacheKey = `throughput:${userId}`;
+        const cached = getCached<any>(cacheKey);
+        if (cached) return cached;
+
         const since = new Date();
         since.setHours(since.getHours() - 2);
 
@@ -143,10 +197,152 @@ export abstract class MetricsService {
             ORDER BY bucket ASC
         `;
 
-        return rows.map((r) => ({
+        const data = rows.map((r) => ({
             time: r.bucket.toISOString(),
             requestsPerMinute: Number(r.requests),
         }));
+
+        setCache(cacheKey, data);
+        return data;
+    }
+
+    // ── New Metrics Methods ──────────────────────────────────────────
+
+    static async getErrorRateOverTime(userId: number, range: string) {
+        const cacheKey = `errorRate:${userId}:${range}`;
+        const cached = getCached<any>(cacheKey);
+        if (cached) return cached;
+
+        const since = getSince(range);
+
+        const rows = await prisma.$queryRaw<
+            Array<{
+                date: Date;
+                total_requests: bigint;
+                failed_requests: bigint;
+            }>
+        >`
+            SELECT
+                DATE_TRUNC('day', "createdAt") AS date,
+                COUNT(*)::bigint AS total_requests,
+                SUM(CASE WHEN "success" = false THEN 1 ELSE 0 END)::bigint AS failed_requests
+            FROM "UsageMetric"
+            WHERE "userId" = ${userId} AND "createdAt" >= ${since}
+            GROUP BY DATE_TRUNC('day', "createdAt")
+            ORDER BY date ASC
+        `;
+
+        const data = rows.map((r) => {
+            const total = Number(r.total_requests);
+            const failed = Number(r.failed_requests);
+            return {
+                date: r.date.toISOString().split("T")[0],
+                totalRequests: total,
+                failedRequests: failed,
+                errorRate: total > 0 ? Math.round((failed / total) * 10000) / 100 : 0,
+            };
+        });
+
+        setCache(cacheKey, data);
+        return data;
+    }
+
+    static async getCostOverTime(userId: number, range: string) {
+        const cacheKey = `cost:${userId}:${range}`;
+        const cached = getCached<any>(cacheKey);
+        if (cached) return cached;
+
+        const since = getSince(range);
+
+        const rows = await prisma.$queryRaw<
+            Array<{
+                date: Date;
+                cost: number;
+            }>
+        >`
+            SELECT
+                DATE_TRUNC('day', "createdAt") AS date,
+                COALESCE(SUM("cost"), 0)::float AS cost
+            FROM "UsageMetric"
+            WHERE "userId" = ${userId} AND "createdAt" >= ${since}
+            GROUP BY DATE_TRUNC('day', "createdAt")
+            ORDER BY date ASC
+        `;
+
+        const data = rows.map((r) => ({
+            date: r.date.toISOString().split("T")[0],
+            cost: Math.round(r.cost * 100) / 100,
+        }));
+
+        setCache(cacheKey, data);
+        return data;
+    }
+
+    static async getLatencyOverTime(userId: number, range: string) {
+        const cacheKey = `latency:${userId}:${range}`;
+        const cached = getCached<any>(cacheKey);
+        if (cached) return cached;
+
+        const since = getSince(range);
+
+        const rows = await prisma.$queryRaw<
+            Array<{
+                date: Date;
+                avg_latency: number;
+            }>
+        >`
+            SELECT
+                DATE_TRUNC('day', "createdAt") AS date,
+                COALESCE(AVG("latencyMs"), 0)::float AS avg_latency
+            FROM "UsageMetric"
+            WHERE "userId" = ${userId} AND "createdAt" >= ${since}
+            GROUP BY DATE_TRUNC('day', "createdAt")
+            ORDER BY date ASC
+        `;
+
+        const data = rows.map((r) => ({
+            date: r.date.toISOString().split("T")[0],
+            avgLatencyMs: Math.round(r.avg_latency),
+        }));
+
+        setCache(cacheKey, data);
+        return data;
+    }
+
+    static async getTokenUsageOverTime(userId: number, range: string) {
+        const cacheKey = `tokens:${userId}:${range}`;
+        const cached = getCached<any>(cacheKey);
+        if (cached) return cached;
+
+        const since = getSince(range);
+
+        const rows = await prisma.$queryRaw<
+            Array<{
+                date: Date;
+                input_tokens: bigint;
+                output_tokens: bigint;
+                total_tokens: bigint;
+            }>
+        >`
+            SELECT
+                DATE_TRUNC('day', "createdAt") AS date,
+                COALESCE(SUM("inputTokens"), 0)::bigint AS input_tokens,
+                COALESCE(SUM("outputTokens"), 0)::bigint AS output_tokens,
+                COALESCE(SUM("totalTokens"), 0)::bigint AS total_tokens
+            FROM "UsageMetric"
+            WHERE "userId" = ${userId} AND "createdAt" >= ${since}
+            GROUP BY DATE_TRUNC('day', "createdAt")
+            ORDER BY date ASC
+        `;
+
+        const data = rows.map((r) => ({
+            date: r.date.toISOString().split("T")[0],
+            inputTokens: Number(r.input_tokens),
+            outputTokens: Number(r.output_tokens),
+            totalTokens: Number(r.total_tokens),
+        }));
+
+        setCache(cacheKey, data);
+        return data;
     }
 }
-
