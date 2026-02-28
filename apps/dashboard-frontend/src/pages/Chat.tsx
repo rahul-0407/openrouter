@@ -7,7 +7,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Send, Loader2, Bot, User, AlertCircle } from "lucide-react";
+import { Send, Loader2, Bot, User, AlertCircle, MessageSquare, History, Plus, Trash2 } from "lucide-react";
 
 const API_BASE = "http://localhost:4000";
 const BACKEND_BASE = "http://localhost:3000";
@@ -34,15 +34,21 @@ async function streamChat(
     onToken: (token: string) => void,
     onDone: () => void,
     onError: (err: string) => void,
+    conversationId?: string | null,
 ) {
-    const res = await fetch(`${API_BASE}/api/v1/chat/completions`, {
+    const res = await fetch(`${API_BASE}/v1/chat/completions`, {
         method: "POST",
         credentials: "include", 
         headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${apiKey}`,
         },
-        body: JSON.stringify({ model, messages, stream: true }),
+        body: JSON.stringify({ 
+            model, 
+            messages, 
+            stream: true,
+            conversation_id: conversationId 
+        }),
     });
 
     if (!res.ok) {
@@ -104,6 +110,9 @@ export function Chat() {
     const [modelsLoading, setModelsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [apiKey, setApiKey] = useState("");
+    const [conversations, setConversations] = useState<any[]>([]);
+    const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+    const [historyLoading, setHistoryLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -137,6 +146,47 @@ export function Chat() {
             })
             .catch(() => {});
     }, []);
+
+    // Fetch history
+    const fetchHistory = useCallback(() => {
+        setHistoryLoading(true);
+        fetch(`${BACKEND_BASE}/conversations`, { credentials: "include" })
+            .then(r => r.json())
+            .then(data => setConversations(data))
+            .catch(() => {})
+            .finally(() => setHistoryLoading(false));
+    }, []);
+
+    useEffect(() => {
+        fetchHistory();
+    }, [fetchHistory]);
+
+    const loadConversation = async (id: string) => {
+        if (isSending) return;
+        setHistoryLoading(true);
+        try {
+            const res = await fetch(`${BACKEND_BASE}/conversations/${id}`, { credentials: "include" });
+            const data = await res.json();
+            if (data.messages) {
+                setMessages(data.messages.map((m: any) => ({
+                    role: m.role,
+                    content: m.content
+                })));
+                setCurrentConversationId(id);
+            }
+        } catch (err) {
+            setError("Failed to load conversation");
+        } finally {
+            setHistoryLoading(false);
+        }
+    };
+
+    const startNewChat = () => {
+        if (isSending) return;
+        setMessages([]);
+        setCurrentConversationId(null);
+        setStreamingContent("");
+    };
 
     // Auto-scroll
     useEffect(() => {
@@ -186,6 +236,8 @@ export function Chat() {
                     }
                     setStreamingContent("");
                     setIsSending(false);
+                    // Refresh history to catch the new conversation/title
+                    fetchHistory();
                 },
                 (errMsg) => {
                     setError(errMsg);
@@ -198,6 +250,7 @@ export function Chat() {
                     setStreamingContent("");
                     setIsSending(false);
                 },
+                currentConversationId
             );
         } catch (err) {
             setError("Network error");
@@ -215,141 +268,190 @@ export function Chat() {
 
     return (
         <DashboardLayout>
-            <div className="flex flex-col h-[calc(100vh-4rem)]">
-                {/* Header */}
-                <div className="flex items-center justify-between pb-4 border-b border-border/50">
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Chat</h1>
-                        <p className="text-muted-foreground text-sm mt-0.5">
-                            Streaming conversation with AI models.
-                        </p>
+            <div className="flex h-[calc(100vh-4rem)] -m-6">
+                {/* History Sidebar */}
+                <div className="w-72 border-r border-border/50 bg-card/20 flex flex-col">
+                    <div className="p-4 border-b border-border/50">
+                        <button
+                            onClick={startNewChat}
+                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-primary/10 border border-primary/20 text-primary hover:bg-primary/15 transition-all text-sm font-medium"
+                        >
+                            <Plus className="size-4" />
+                            New Chat
+                        </button>
                     </div>
-                    <div className="flex items-center gap-3 ">
-                        {modelsLoading ? (
-                            <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                                <Loader2 className="size-3.5 animate-spin" />
-                                Loading models...
+
+                    <div className="flex-1 overflow-y-auto p-3 space-y-1">
+                        <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            <History className="size-3" />
+                            History
+                        </div>
+                        {historyLoading && conversations.length === 0 ? (
+                            <div className="flex items-center justify-center py-8">
+                                <Loader2 className="size-5 animate-spin text-muted-foreground/40" />
+                            </div>
+                        ) : conversations.length === 0 ? (
+                            <div className="px-3 py-6 text-center">
+                                <p className="text-xs text-muted-foreground/60 italic">No history yet</p>
                             </div>
                         ) : (
-                            <Select value={selectedModel} onValueChange={setSelectedModel}>
-                                <SelectTrigger className="w-[280px] bg-card/50 border-border/50">
-                                    <SelectValue placeholder="Select a model" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {models.map((m) => (
-                                        <SelectItem
-                                            key={m.slug}
-                                            value={m.slug}
-                                            disabled={!m.available}
-                                            className={!m.available ? "opacity-50 cursor-not-allowed" : ""}
-                                        >
-                                            <span className="font-mono text-xs" title={!m.available ? "Provider not available" : undefined}>
-                                                {m.slug}
-                                                {!m.available && (
-                                                    <span className="ml-2 text-muted-foreground/60 text-[10px] font-sans">
-                                                        (unavailable)
-                                                    </span>
-                                                )}
-                                            </span>
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            conversations.map((c) => (
+                                <button
+                                    key={c.id}
+                                    onClick={() => loadConversation(c.id)}
+                                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all group flex items-center gap-3 ${
+                                        currentConversationId === c.id
+                                            ? "bg-primary/20 text-primary border border-primary/20"
+                                            : "hover:bg-card/50 text-muted-foreground border border-transparent"
+                                    }`}
+                                >
+                                    <MessageSquare className={`size-4 shrink-0 ${currentConversationId === c.id ? "text-primary" : "text-muted-foreground/60"}`} />
+                                    <span className="truncate flex-1 font-medium">
+                                        {c.title || "New Chat"}
+                                    </span>
+                                </button>
+                            ))
                         )}
                     </div>
                 </div>
 
-                {/* Messages */}
-                <div className="flex-1 overflow-y-auto py-6 space-y-4 min-h-0">
-                    {messages.length === 0 && !isSending && (
-                        <div className="flex flex-col items-center justify-center h-full text-center">
-                            <div className="flex items-center justify-center size-16 rounded-2xl bg-primary/5 border border-primary/10 mb-4">
-                                <Bot className="size-7 text-primary/60" />
-                            </div>
-                            <h3 className="text-lg font-semibold text-foreground/80">
-                                Start a conversation
-                            </h3>
-                            <p className="text-muted-foreground text-sm mt-1 max-w-sm">
-                                Select a model and type a message below to begin.
+                {/* Main Chat Area */}
+                <div className="flex-1 flex flex-col p-6 min-w-0">
+                    {/* Header */}
+                    <div className="flex items-center justify-between pb-4 border-b border-border/50">
+                        <div>
+                            <h1 className="text-2xl font-bold tracking-tight">Chat</h1>
+                            <p className="text-muted-foreground text-sm mt-0.5">
+                                Streaming conversation with AI models.
                             </p>
                         </div>
-                    )}
+                        <div className="flex items-center gap-3 ">
+                            {modelsLoading ? (
+                                <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                                    <Loader2 className="size-3.5 animate-spin" />
+                                    Loading models...
+                                </div>
+                            ) : (
+                                <Select value={selectedModel} onValueChange={setSelectedModel}>
+                                    <SelectTrigger className="w-[280px] bg-card/50 border-border/50">
+                                        <SelectValue placeholder="Select a model" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {models.map((m) => (
+                                            <SelectItem
+                                                key={m.slug}
+                                                value={m.slug}
+                                                disabled={!m.available}
+                                                className={!m.available ? "opacity-50 cursor-not-allowed" : ""}
+                                            >
+                                                <span className="font-mono text-xs text-white" title={!m.available ? "Provider not available" : undefined}>
+                                                    {m.slug}
+                                                    {!m.available && (
+                                                        <span className="ml-2 text-muted-foreground/60 text-[10px] font-sans">
+                                                            (unavailable)
+                                                        </span>
+                                                    )}
+                                                </span>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        </div>
+                    </div>
 
-                    {messages.map((msg, i) => (
-                        <MessageBubble key={i} message={msg} />
-                    ))}
-
-                    {/* Streaming assistant message */}
-                    {isSending && streamingContent && (
-                        <MessageBubble
-                            message={{ role: "assistant", content: streamingContent }}
-                            isStreaming
-                        />
-                    )}
-
-                    {/* Typing indicator */}
-                    {isSending && !streamingContent && (
-                        <div className="flex items-start gap-3">
-                            <div className="flex items-center justify-center size-8 rounded-lg bg-primary/10 border border-primary/20 shrink-0">
-                                <Bot className="size-4 text-primary" />
+                    {/* Messages */}
+                    <div className="flex-1 overflow-y-auto py-6 space-y-4 min-h-0">
+                        {messages.length === 0 && !isSending && (
+                            <div className="flex flex-col items-center justify-center h-full text-center">
+                                <div className="flex items-center justify-center size-16 rounded-2xl bg-primary/5 border border-primary/10 mb-4">
+                                    <Bot className="size-7 text-primary/60" />
+                                </div>
+                                <h3 className="text-lg font-semibold text-foreground/80">
+                                    Start a conversation
+                                </h3>
+                                <p className="text-muted-foreground text-sm mt-1 max-w-sm">
+                                    Select a model and type a message below to begin.
+                                </p>
                             </div>
-                            <div className="bg-card/60 border border-border/40 rounded-2xl rounded-tl-sm px-4 py-3">
-                                <div className="flex items-center gap-1.5">
-                                    <div className="size-1.5 rounded-full bg-muted-foreground/60 animate-bounce [animation-delay:0ms]" />
-                                    <div className="size-1.5 rounded-full bg-muted-foreground/60 animate-bounce [animation-delay:150ms]" />
-                                    <div className="size-1.5 rounded-full bg-muted-foreground/60 animate-bounce [animation-delay:300ms]" />
+                        )}
+
+                        {messages.map((msg, i) => (
+                            <MessageBubble key={i} message={msg} />
+                        ))}
+
+                        {/* Streaming assistant message */}
+                        {isSending && streamingContent && (
+                            <MessageBubble
+                                message={{ role: "assistant", content: streamingContent }}
+                                isStreaming
+                            />
+                        )}
+
+                        {/* Typing indicator */}
+                        {isSending && !streamingContent && (
+                            <div className="flex items-start gap-3">
+                                <div className="flex items-center justify-center size-8 rounded-lg bg-primary/10 border border-primary/20 shrink-0">
+                                    <Bot className="size-4 text-primary" />
+                                </div>
+                                <div className="bg-card/60 border border-border/40 rounded-2xl rounded-tl-sm px-4 py-3">
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="size-1.5 rounded-full bg-muted-foreground/60 animate-bounce [animation-delay:0ms]" />
+                                        <div className="size-1.5 rounded-full bg-muted-foreground/60 animate-bounce [animation-delay:150ms]" />
+                                        <div className="size-1.5 rounded-full bg-muted-foreground/60 animate-bounce [animation-delay:300ms]" />
+                                    </div>
                                 </div>
                             </div>
+                        )}
+
+                        <div ref={messagesEndRef} />
+                    </div>
+
+                    {/* Error toast */}
+                    {error && (
+                        <div className="flex items-center gap-2 px-4 py-2.5 mb-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                            <AlertCircle className="size-4 shrink-0" />
+                            {error}
                         </div>
                     )}
 
-                    <div ref={messagesEndRef} />
-                </div>
-
-                {/* Error toast */}
-                {error && (
-                    <div className="flex items-center gap-2 px-4 py-2.5 mb-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
-                        <AlertCircle className="size-4 shrink-0" />
-                        {error}
-                    </div>
-                )}
-
-                {/* Input */}
-                <div className="border-t border-border/50 pt-4 pb-2">
-                    <div className="flex items-end gap-3">
-                        <div className="flex-1 relative">
-                            <textarea
-                                ref={inputRef}
-                                value={input}
-                                onChange={(e) => setInput(e.target.value)}
-                                onKeyDown={handleKeyDown}
-                                disabled={isSending}
-                                placeholder={
-                                    isSending
-                                        ? "Waiting for response..."
-                                        : "Type a message... (Enter to send)"
-                                }
-                                rows={1}
-                                className="w-full resize-none rounded-xl border border-border/50 bg-card/30 px-4 py-3 pr-12 text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-white"
-                                style={{ minHeight: "48px", maxHeight: "120px" }}
-                                onInput={(e) => {
-                                    const t = e.target as HTMLTextAreaElement;
-                                    t.style.height = "auto";
-                                    t.style.height = Math.min(t.scrollHeight, 120) + "px";
-                                }}
-                            />
+                    {/* Input */}
+                    <div className="border-t border-border/50 pt-4 pb-2">
+                        <div className="flex items-end gap-3">
+                            <div className="flex-1 relative">
+                                <textarea
+                                    ref={inputRef}
+                                    value={input}
+                                    onChange={(e) => setInput(e.target.value)}
+                                    onKeyDown={handleKeyDown}
+                                    disabled={isSending}
+                                    placeholder={
+                                        isSending
+                                            ? "Waiting for response..."
+                                            : "Type a message... (Enter to send)"
+                                    }
+                                    rows={1}
+                                    className="w-full resize-none rounded-xl border border-border/50 bg-card/30 px-4 py-3 pr-12 text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-white"
+                                    style={{ minHeight: "48px", maxHeight: "120px" }}
+                                    onInput={(e) => {
+                                        const t = e.target as HTMLTextAreaElement;
+                                        t.style.height = "auto";
+                                        t.style.height = Math.min(t.scrollHeight, 120) + "px";
+                                    }}
+                                />
+                            </div>
+                            <button
+                                onClick={handleSend}
+                                disabled={isSending || !input.trim() || !selectedModel}
+                                className="flex items-center justify-center size-12 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0"
+                            >
+                                {isSending ? (
+                                    <Loader2 className="size-4 animate-spin" />
+                                ) : (
+                                    <Send className="size-4" />
+                                )}
+                            </button>
                         </div>
-                        <button
-                            onClick={handleSend}
-                            disabled={isSending || !input.trim() || !selectedModel}
-                            className="flex items-center justify-center size-12 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0"
-                        >
-                            {isSending ? (
-                                <Loader2 className="size-4 animate-spin" />
-                            ) : (
-                                <Send className="size-4" />
-                            )}
-                        </button>
                     </div>
                 </div>
             </div>

@@ -26,6 +26,7 @@ type HandlerSuccess = {
   providerName: string;
   inputTokenCost: number;
   outputTokenCost: number;
+  conversationId?: string;
 };
 
 type HandlerStreamSuccess = {
@@ -38,6 +39,7 @@ type HandlerStreamSuccess = {
   providerName: string;
   inputTokenCost: number;
   outputTokenCost: number;
+  conversationId?: string;
 };
 
 type HandlerError = {
@@ -132,6 +134,35 @@ async function handleChatCompletion(
   const provider = providers[Math.floor(Math.random() * providers.length)];
   const companyName = model.split("/")[0];
 
+  // ── CONVERSATION PERSISTENCE ──────────────────────────────────
+  let conversationId = (body as any).conversation_id;
+  if (!conversationId && apiKeyDb.user.id) {
+    // Auto-create conversation if missing
+    // We'll use the first 50 chars of the first message as title
+    const firstMsg = body.messages.find(m => m.role === 'user')?.content || "New Chat";
+    const title = firstMsg.slice(0, 50) + (firstMsg.length > 50 ? "..." : "");
+
+    const conv = await prisma.conversation.create({
+      data: {
+        userId: apiKeyDb.user.id,
+        title,
+      }
+    });
+    conversationId = conv.id;
+  }
+
+  // Save the incoming user message (only the last one if it's new)
+  const lastUserMsg = body.messages.filter(m => m.role === 'user').pop();
+  if (conversationId && lastUserMsg) {
+    await prisma.message.create({
+      data: {
+        conversationId,
+        role: "user",
+        content: lastUserMsg.content,
+      }
+    });
+  }
+
   // ── STREAMING PATH ──────────────────────────────────────────────
   if (isStreaming) {
     let streamResult: LlmStreamResult | null = null;
@@ -189,6 +220,7 @@ async function handleChatCompletion(
       providerName: provider.provider.name,
       inputTokenCost: provider.inputTokenCost,
       outputTokenCost: provider.outputTokenCost,
+      conversationId,
     };
   }
 
@@ -242,6 +274,18 @@ async function handleChatCompletion(
   const cost = (inputTokens * provider.inputTokenCost + outputTokens * provider.outputTokenCost) / 10;
   const latencyMs = Math.round(performance.now() - startTime);
 
+  // Save assistant message if in a conversation
+  if (conversationId) {
+    await prisma.message.create({
+      data: {
+        conversationId,
+        role: "assistant",
+        content: response.completions.choices[0].message.content,
+        model: model,
+      }
+    });
+  }
+
   // Deduct wallet balance (atomic guard against negative)
   await prisma.user.updateMany({
     where: { id: apiKeyDb.user.id, walletBalance: { gte: cost } },
@@ -283,6 +327,7 @@ async function handleChatCompletion(
     providerName: provider.provider.name,
     inputTokenCost: provider.inputTokenCost,
     outputTokenCost: provider.outputTokenCost,
+    conversationId,
   };
 }
 
@@ -296,7 +341,9 @@ function buildLegacyStreamResponse(result: HandlerStreamSuccess): Response {
     async start(controller) {
       const encoder = new TextEncoder();
       try {
+        let accumulated = "";
         for await (const token of tokenStream) {
+          accumulated += token;
           const chunk = JSON.stringify({
             choices: [{ delta: { content: token } }]
           });
@@ -307,6 +354,17 @@ function buildLegacyStreamResponse(result: HandlerStreamSuccess): Response {
 
         const latencyMs = Math.round(performance.now() - startTime);
         const usage = getUsage();
+
+        if (result.conversationId && accumulated) {
+          prisma.message.create({
+            data: {
+              conversationId: result.conversationId,
+              role: "assistant",
+              content: accumulated,
+              model,
+            }
+          }).catch(() => { });
+        }
         const totalTokens = usage.inputTokens + usage.outputTokens;
         const cost = (usage.inputTokens * inputTokenCost + usage.outputTokens * outputTokenCost) / 10;
 
@@ -363,7 +421,9 @@ function buildOpenAIStreamResponse(result: HandlerStreamSuccess): Response {
     async start(controller) {
       const encoder = new TextEncoder();
       try {
+        let accumulated = "";
         for await (const token of tokenStream) {
+          accumulated += token;
           const chunk = JSON.stringify(toOpenAIStreamChunk(token, chatId, model));
           controller.enqueue(encoder.encode(`data: ${chunk}\n\n`));
         }
@@ -375,6 +435,17 @@ function buildOpenAIStreamResponse(result: HandlerStreamSuccess): Response {
 
         const latencyMs = Math.round(performance.now() - startTime);
         const usage = getUsage();
+
+        if (result.conversationId && accumulated) {
+          prisma.message.create({
+            data: {
+              conversationId: result.conversationId,
+              role: "assistant",
+              content: accumulated,
+              model,
+            }
+          }).catch(() => { });
+        }
         const totalTokens = usage.inputTokens + usage.outputTokens;
         const cost = (usage.inputTokens * inputTokenCost + usage.outputTokens * outputTokenCost) / 10;
 

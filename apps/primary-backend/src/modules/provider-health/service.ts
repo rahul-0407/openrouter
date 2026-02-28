@@ -1,7 +1,12 @@
 import { prisma } from "db";
+import { cache } from "cache";
 
 export abstract class ProviderHealthService {
     static async getProviderHealthSummary() {
+        const cacheKey = "provider:health:summary";
+        const cached = cache.get<any[]>(cacheKey);
+        if (cached) return cached;
+
         // Aggregate metrics per provider from the last 24 hours
         const since = new Date();
         since.setHours(since.getHours() - 24);
@@ -41,7 +46,7 @@ export abstract class ProviderHealthService {
         const successMap = new Map(lastSuccess.map(s => [s.provider, s._max.createdAt]));
         const failureMap = new Map(lastFailure.map(f => [f.provider, f._max.createdAt]));
 
-        return providers.map(p => {
+        const result = providers.map(p => {
             const totalRequests = p._count.id;
             const failedRequests = failedMap.get(p.provider) || 0;
             const errorRate = (failedRequests / totalRequests) * 100;
@@ -71,9 +76,16 @@ export abstract class ProviderHealthService {
                 lastFailure: failureMap.get(p.provider) || null
             };
         });
+
+        cache.set(cacheKey, result, 30); // 30s TTL
+        return result;
     }
 
     static async getProviderHealthTimeSeries(range: string = "24h") {
+        const cacheKey = `provider:health:timeseries:${range}`;
+        const cached = cache.get<any[]>(cacheKey);
+        if (cached) return cached;
+
         const hours = range === "7d" ? 168 : range === "30d" ? 720 : 24;
         const since = new Date();
         since.setHours(since.getHours() - hours);
@@ -97,11 +109,14 @@ export abstract class ProviderHealthService {
             ORDER BY bucket ASC
         `;
 
-        return rows.map(r => ({
+        const result = rows.map(r => ({
             timestamp: r.bucket.toISOString(),
             provider: r.provider,
             latency: Math.round(r.latency),
             errorRate: Math.round(r.error_rate * 100) / 100
         }));
+
+        cache.set(cacheKey, result, 30); // 30s TTL
+        return result;
     }
 }

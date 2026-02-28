@@ -1,25 +1,34 @@
 import { prisma } from "db"
+import { cache } from "cache"
 
 // Provider name → environment variable mapping for API key availability check
-const PROVIDER_API_KEY_MAP: Record<string, string> = {
-    "OpenAI": "OPENAI_API_KEY",
-    "Anthropic": "ANTHROPIC_API_KEY",
-    "Google": "GEMINI_API_KEY",
-    "Meta": "META_API_KEY",
-    "Mistral": "MISTRAL_API_KEY",
-    "Cohere": "COHERE_API_KEY",
+// Some providers may use multiple possible keys
+const PROVIDER_API_KEY_MAP: Record<string, string[]> = {
+    "OpenAI": ["OPENAI_API_KEY"],
+    "Anthropic": ["ANTHROPIC_API_KEY"],
+    "Google": ["GEMINI_API_KEY", "GOOGLE_API_KEY"],
+    "Meta": ["META_API_KEY"],
+    "Mistral": ["MISTRAL_API_KEY"],
+    "Cohere": ["COHERE_API_KEY"],
 };
 
 function isProviderAvailable(providerName: string): boolean {
-    const envKey = PROVIDER_API_KEY_MAP[providerName];
-    if (!envKey) return false;
-    const value = process.env[envKey];
-    return !!value && value.trim().length > 0;
+    const envKeys = PROVIDER_API_KEY_MAP[providerName];
+    if (!envKeys) return false;
+
+    return envKeys.some(key => {
+        const value = process.env[key];
+        return !!value && value.trim().length > 0;
+    });
 }
 
 export abstract class ModelsService {
 
     static async getModels() {
+        const cacheKey = "models:list";
+        const cached = cache.get<any[]>(cacheKey);
+        if (cached) return cached;
+
         const models = await prisma.model.findMany({
             include: {
                 company: true,
@@ -31,18 +40,23 @@ export abstract class ModelsService {
             }
         })
 
-        return models.map(model => {
-            // A model is available if it has at least one provider mapping
-            // AND that provider has a configured API key
-            const hasAvailableProvider = model.modelProviderMappings.some(
-                mapping => isProviderAvailable(mapping.provider.name)
+        const result = models.map(model => {
+            // A model is available if:
+            // 1. It has a provider mapping with 0 cost (free model)
+            // 2. OR it has a provider mapping where the provider has a configured API key
+            const isAvailable = model.modelProviderMappings.some(
+                mapping => {
+                    const isFree = mapping.inputTokenCost === 0 && mapping.outputTokenCost === 0;
+                    const hasKey = isProviderAvailable(mapping.provider.name);
+                    return isFree || hasKey;
+                }
             );
 
             return {
                 id: model.id.toString(),
                 name: model.name,
                 slug: model.slug,
-                available: hasAvailableProvider,
+                available: isAvailable,
                 company: {
                     id: model.company.id.toString(),
                     name: model.company.name,
@@ -50,6 +64,9 @@ export abstract class ModelsService {
                 }
             };
         })
+
+        cache.set(cacheKey, result, 600); // 10 minutes
+        return result;
     }
 
     static async getProviders() {

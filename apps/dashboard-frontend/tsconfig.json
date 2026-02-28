@@ -23,7 +23,10 @@
 
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "cache": ["../../packages/cache/index.ts"],
+      "db": ["../../packages/db/index.ts"],
+      "app": ["../../apps/primary-backend/src/app.ts"]
     },
 
     // Some stricter flags (disabled by default)

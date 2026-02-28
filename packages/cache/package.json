@@ -1,0 +1,11 @@
+{
+  "name": "cache",
+  "module": "index.ts",
+  "type": "module",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "private": true,
+  "dependencies": {
+  }
+}

@@ -13,6 +13,8 @@ export const Conversation = t.Object({
     stream: t.Optional(t.Boolean()),
     temperature: t.Optional(t.Number()),
     max_tokens: t.Optional(t.Number()),
+    conversation_id: t.Optional(t.String()),
+    parent_id: t.Optional(t.String()),
 })
 
 // Permissive variant: accepts any additional fields OpenAI SDKs may send
@@ -23,4 +25,5 @@ export const OpenAIConversation = t.Object({
     stream: t.Optional(t.Boolean()),
     temperature: t.Optional(t.Number()),
     max_tokens: t.Optional(t.Number()),
+    conversation_id: t.Optional(t.String()),
 }, { additionalProperties: true })
