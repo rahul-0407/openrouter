@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router";
 import { cn } from "@/lib/utils";
+import { useState, useCallback } from "react";
 import {
     LayoutDashboard,
     Key,
@@ -12,6 +13,7 @@ import {
     ExternalLink,
     ShieldCheck,
 } from "lucide-react";
+import { LoadingOverlay } from "./LoadingOverlay";
 
 const DOCS_URL = "http://localhost:3002";
 
@@ -27,9 +29,28 @@ const navItems = [
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
     const location = useLocation();
+    const [isNavigatingToDocs, setIsNavigatingToDocs] = useState(false);
+
+    const prefetchDocs = useCallback(() => {
+        const link = document.createElement("link");
+        link.rel = "prefetch";
+        link.href = DOCS_URL;
+        document.head.appendChild(link);
+    }, []);
+
+    const handleDocsClick = (e: React.MouseEvent) => {
+        setIsNavigatingToDocs(true);
+        // We'll let the user see the animation for a moment even if it's fast
+        setTimeout(() => {
+            window.location.href = DOCS_URL;
+        }, 800);
+        e.preventDefault();
+    };
 
     return (
         <div className="dark min-h-screen bg-background flex">
+            <LoadingOverlay isVisible={isNavigatingToDocs} />
+            
             {/* Sidebar */}
             <aside className="w-64 border-r border-border/50 flex flex-col bg-card/30">
                 {/* Brand */}
@@ -37,7 +58,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     <div className="flex items-center justify-center size-8 rounded-lg bg-primary/10 border border-primary/20">
                         <Zap className="size-3.5 text-primary" />
                     </div>
-                    <span className="text-sm font-semibold tracking-tight text-foreground">
+                    <span className="text-sm font-semibold tracking-tight text-foreground uppercase">
                         OpenRouter
                     </span>
                 </div>
@@ -58,8 +79,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                                 <a
                                     key={item.href}
                                     href={item.href}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                    onClick={handleDocsClick}
+                                    onMouseEnter={prefetchDocs}
                                     className={classes}
                                 >
                                     <item.icon className="size-4" />
