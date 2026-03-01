@@ -12,6 +12,7 @@ import {
     Layers,
     BookOpen,
 } from "lucide-react";
+import { BackgroundVideo } from "@/components/BackgroundVideo";
 
 const DOCS_URL = "http://localhost:3002";
 
@@ -63,7 +64,10 @@ export function Landing() {
     const modelCount = modelsQuery.data?.models?.length ?? 200;
 
     return (
-        <div className="dark min-h-screen bg-background text-foreground">
+        <div className="dark min-h-screen bg-background text-foreground relative">
+            {/* Background Video */}
+            <BackgroundVideo src="/assets/background-video.mp4" opacity={0.65} />
+            
             {/* Navigation */}
             <header className="fixed top-0 inset-x-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
                 <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -96,7 +100,7 @@ export function Landing() {
             </header>
 
             {/* Hero */}
-            <section className="relative pt-32 pb-24 overflow-hidden">
+            <section className="relative pt-32 pb-24 overflow-hidden z-10">
                 {/* Background effects */}
                 <div
                     className="absolute w-[800px] h-[800px] rounded-full opacity-[0.06] blur-[150px]"
@@ -190,7 +194,7 @@ export function Landing() {
             </section>
 
             {/* Features */}
-            <section className="py-24 border-t border-border/30">
+            <section className="py-24 border-t border-border/30 relative z-10">
                 <div className="max-w-6xl mx-auto px-6">
                     <div className="text-center mb-16">
                         <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
@@ -222,7 +226,7 @@ export function Landing() {
 
             {/* Models preview */}
             {modelsQuery.data?.models && modelsQuery.data.models.length > 0 && (
-                <section className="py-24 border-t border-border/30">
+                <section className="py-24 border-t border-border/30 relative z-10">
                     <div className="max-w-6xl mx-auto px-6">
                         <div className="text-center mb-12">
                             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
@@ -254,7 +258,7 @@ export function Landing() {
             )}
 
             {/* CTA */}
-            <section className="py-24 border-t border-border/30">
+            <section className="py-24 border-t border-border/30 relative z-10">
                 <div className="max-w-6xl mx-auto px-6 text-center">
                     <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
                         Ready to start building?
@@ -272,7 +276,7 @@ export function Landing() {
             </section>
 
             {/* Footer */}
-            <footer className="border-t border-border/30 py-8">
+            <footer className="border-t border-border/30 py-8 relative z-10">
                 <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Zap className="size-3.5 text-muted-foreground" />

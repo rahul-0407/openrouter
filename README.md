@@ -1,3 +1,320 @@
+# 🚀 OpenRouter — Multi-Provider LLM Gateway Platform
+
+OpenRouter is a production-grade, multi-provider LLM gateway that routes requests across different AI providers (OpenAI, Gemini, Claude, etc.) through a unified API.
+
+---
+
+## 📸 Application Screenshots
+
+Here are some key screenshots from the Voting DApp:
+
+![Home Page](./screenshots/home.png)  
+*Home Page*
+
+![Dahboard](./screenshots/dashboard.png)  
+*Dasboard with APIs*
+
+![Metrics Page](./screenshots/metrics.png)  
+*Metrics to show usage*
+
+![Chat Page](./screenshots/chat.png)  
+*Chat with models*
+
+![Docs Site](./screenshots/docs.png)  
+*Docs of our site*
+
+---
+
+It includes:
+
+- 🔁 Smart multi-provider routing
+- 💰 Wallet-based billing system
+- 📊 Usage metrics & observability
+- 📡 Streaming (SSE) support
+- 🔌 OpenAI-compatible API
+- 🧠 Conversation persistence
+- 🧰 TypeScript SDK
+- 📚 Developer docs + Playground
+- 🛠 Admin provider health dashboard
+- ⚡ Caching for performance optimization
+
+---
+
+# ✨ Why OpenRouter?
+
+Instead of integrating separately with multiple AI providers, OpenRouter gives you:
+
+- A **single unified API**
+- Automatic provider routing
+- Usage tracking & billing
+- OpenAI protocol compatibility
+- Production-ready observability
+
+---
+
+# 🏗 Architecture Overview
+
+Client App
+↓
+OpenRouter Gateway
+↓
+Provider Router
+↓
+OpenAI / Gemini / Claude / etc.
+
+The gateway abstracts:
+
+- Authentication
+- Wallet deduction
+- Metrics logging
+- Streaming formatting
+- Error normalization
+
+---
+
+# 🧩 Core Features
+
+## 1️⃣ Multi-Provider Routing
+
+- Route requests to OpenAI, Gemini, Claude
+- Provider mapping via DB
+- Automatic fail-safe logic (extensible)
+- Cost-based routing ready
+
+---
+
+## 2️⃣ OpenAI-Compatible API
+
+Supports: POST /v1/chat/completions
+
+Fully compatible with:
+
+- OpenAI SDK
+- Vercel AI SDK
+- LangChain OpenAI wrapper
+- Any OpenAI-compatible client
+
+Example:
+
+```ts
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: "YOUR_KEY",
+  baseURL: "http://localhost:4000/v1"
+});
+
+## 🚀 Core Features
+
+### 3️⃣ Streaming Support (SSE)
+
+- Real-time token streaming  
+- OpenAI-compatible chunk format  
+- `[DONE]` termination event  
+- Works with async iterators  
+
+---
+
+### 4️⃣ Wallet-Based Billing
+
+Replaces credit system with real wallet balance.
+
+**Features:**
+- Real currency wallet
+- Atomic balance deduction
+- Transaction logging
+- Negative balance protection
+- Works for streaming & non-streaming
+
+**Tables:**
+- `User (walletBalance)`
+- `WalletTransaction`
+- `UsageMetric`
+
+---
+
+### 5️⃣ Metrics & Observability
+
+Track:
+- Requests
+- Tokens
+- Cost (model/provider)
+- Latency
+- Error rate
+- Throughput (req/min)
+- P95 latency
+- Provider health
+
+Optimized via:
+- Aggregation queries
+- TTL caching
+- Indexed DB queries
+
+---
+
+### 6️⃣ Conversation Persistence
+
+ChatGPT-style history:
+
+- `Conversations` table
+- `Messages` table
+- Auto-generated titles
+- Universal model-agnostic history
+- Reloadable threads
+
+---
+
+### 7️⃣ Caching Layer
+
+Performance optimization using:
+
+- Redis (if available)
+- In-memory fallback
+- TTL-based caching
+
+Cached endpoints:
+- `/models`
+- metrics
+- provider health
+- usage aggregations
+
+---
+
+### 8️⃣ Admin Provider Health Dashboard
+
+Operator visibility into:
+
+- Provider volume
+- Error rate
+- Avg latency
+- Health status (Healthy / Degraded / Down)
+- Routing performance
+
+---
+
+### 9️⃣ Developer Playground
+
+Interactive testing inside docs:
+
+- Paste API key
+- Select model
+- Streaming responses
+- No SDK required
+
+---
+
+### 🔟 TypeScript SDK
+
+Located at: packages/sdk-ts
+
+
+**Usage:**
+
+```ts
+import { OpenRouter } from "openrouter-sdk";
+
+const client = new OpenRouter({ apiKey: "YOUR_KEY" });
+
+const res = await client.chat({
+  model: "openai/gpt-3.5-turbo",
+  messages: [{ role: "user", content: "Hello!" }]
+});
+```
+
+## 📁 Project Structure
+
+
+openrouter/
+├── apps/
+│ ├── api-backend/ # Public API layer (if applicable)
+│ ├── primary-backend/ # Core LLM gateway (routing, billing, streaming)
+│ ├── dashboard-frontend/ # User dashboard (chat, metrics, wallet, admin)
+│ └── docs/ # Developer documentation + Playground
+│
+├── packages/
+│ ├── cache/
+│ ├── db/ 
+│ ├── sdk-ts/ 
+│ ├── ui/
+│ ├── eslint-config/
+│ └── typescript-config/ 
+│
+├── screenshots/ 
+│
+├── check_balances.ts 
+├── check_providers.ts
+├── get_keys.ts
+
+
+# 🛠 Tech Stack
+
+| Layer | Technologies |
+|-------|-------------|
+| **Backend** | Bun · Elysia · Prisma · PostgreSQL · Redis (optional) |
+| **Frontend** | React · TanStack Query · Tailwind · Framer Motion |
+| **Docs** | Next.js · Nextra |
+| **SDK** | TypeScript (zero runtime deps) |
+
+---
+
+# 🔐 Authentication
+
+```http
+Authorization: Bearer YOUR_API_KEY
+```
+
+API keys are generated via dashboard.
+
+---
+
+# 📡 API Endpoints
+
+```
+POST /v1/chat/completions
+GET  /models
+GET  /metrics/summary
+GET  /conversations
+```
+
+---
+
+# ⚡ Performance
+
+- Indexed queries
+- TTL caching
+- SSE streaming
+- Lazy-loaded charts
+- Optimized aggregations
+
+---
+
+# 🚀 Running Locally
+
+**Install:**
+
+```bash
+bun install
+```
+
+**Backend:**
+
+```bash
+bun run dev
+```
+
+**Dashboard:**
+
+```bash
+bun run --filter dashboard-frontend dev
+```
+
+**Docs:**
+
+```bash
+bun run --filter docs dev
+```
+
+
 # Turborepo starter
 
 This Turborepo starter is maintained by the Turborepo core team.

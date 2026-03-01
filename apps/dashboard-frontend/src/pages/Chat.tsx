@@ -268,97 +268,49 @@ export function Chat() {
 
     return (
         <DashboardLayout>
-            <div className="flex h-[calc(100vh-4rem)] -m-6">
-                {/* History Sidebar */}
-                <div className="w-72 border-r border-border/50 bg-card/20 flex flex-col">
-                    <div className="p-4 border-b border-border/50">
-                        <button
-                            onClick={startNewChat}
-                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-primary/10 border border-primary/20 text-primary hover:bg-primary/15 transition-all text-sm font-medium"
-                        >
-                            <Plus className="size-4" />
-                            New Chat
-                        </button>
+            <div className="flex flex-col h-[calc(100vh-4rem)]">
+                {/* Header */}
+                <div className="flex items-center justify-between pb-4 border-b border-border/50">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight">Chat</h1>
+                        <p className="text-muted-foreground text-sm mt-0.5">
+                            Streaming conversation with AI models.
+                        </p>
                     </div>
-
-                    <div className="flex-1 overflow-y-auto p-3 space-y-1">
-                        <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                            <History className="size-3" />
-                            History
-                        </div>
-                        {historyLoading && conversations.length === 0 ? (
-                            <div className="flex items-center justify-center py-8">
-                                <Loader2 className="size-5 animate-spin text-muted-foreground/40" />
-                            </div>
-                        ) : conversations.length === 0 ? (
-                            <div className="px-3 py-6 text-center">
-                                <p className="text-xs text-muted-foreground/60 italic">No history yet</p>
+                    <div className="flex items-center gap-3 ">
+                        {modelsLoading ? (
+                            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                                <Loader2 className="size-3.5 animate-spin" />
+                                Loading models...
                             </div>
                         ) : (
-                            conversations.map((c) => (
-                                <button
-                                    key={c.id}
-                                    onClick={() => loadConversation(c.id)}
-                                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all group flex items-center gap-3 ${
-                                        currentConversationId === c.id
-                                            ? "bg-primary/20 text-primary border border-primary/20"
-                                            : "hover:bg-card/50 text-muted-foreground border border-transparent"
-                                    }`}
-                                >
-                                    <MessageSquare className={`size-4 shrink-0 ${currentConversationId === c.id ? "text-primary" : "text-muted-foreground/60"}`} />
-                                    <span className="truncate flex-1 font-medium">
-                                        {c.title || "New Chat"}
-                                    </span>
-                                </button>
-                            ))
+                            <Select value={selectedModel} onValueChange={setSelectedModel}>
+                                <SelectTrigger className="w-[280px] bg-card/50 border-border/50">
+                                    <SelectValue placeholder="Select a model" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {models.map((m) => (
+                                        <SelectItem
+                                            key={m.slug}
+                                            value={m.slug}
+                                            disabled={!m.available}
+                                            className={!m.available ? "opacity-50 cursor-not-allowed" : ""}
+                                        >
+                                            <span className="font-mono text-xs" title={!m.available ? "Provider not available" : undefined}>
+                                                {m.slug}
+                                                {!m.available && (
+                                                    <span className="ml-2 text-muted-foreground/60 text-[10px] font-sans">
+                                                        (unavailable)
+                                                    </span>
+                                                )}
+                                            </span>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         )}
                     </div>
                 </div>
-
-                {/* Main Chat Area */}
-                <div className="flex-1 flex flex-col p-6 min-w-0">
-                    {/* Header */}
-                    <div className="flex items-center justify-between pb-4 border-b border-border/50">
-                        <div>
-                            <h1 className="text-2xl font-bold tracking-tight">Chat</h1>
-                            <p className="text-muted-foreground text-sm mt-0.5">
-                                Streaming conversation with AI models.
-                            </p>
-                        </div>
-                        <div className="flex items-center gap-3 ">
-                            {modelsLoading ? (
-                                <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                                    <Loader2 className="size-3.5 animate-spin" />
-                                    Loading models...
-                                </div>
-                            ) : (
-                                <Select value={selectedModel} onValueChange={setSelectedModel}>
-                                    <SelectTrigger className="w-[280px] bg-card/50 border-border/50">
-                                        <SelectValue placeholder="Select a model" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {models.map((m) => (
-                                            <SelectItem
-                                                key={m.slug}
-                                                value={m.slug}
-                                                disabled={!m.available}
-                                                className={!m.available ? "opacity-50 cursor-not-allowed" : ""}
-                                            >
-                                                <span className="font-mono text-xs text-white" title={!m.available ? "Provider not available" : undefined}>
-                                                    {m.slug}
-                                                    {!m.available && (
-                                                        <span className="ml-2 text-muted-foreground/60 text-[10px] font-sans">
-                                                            (unavailable)
-                                                        </span>
-                                                    )}
-                                                </span>
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            )}
-                        </div>
-                    </div>
 
                     {/* Messages */}
                     <div className="flex-1 overflow-y-auto py-6 space-y-4 min-h-0">
