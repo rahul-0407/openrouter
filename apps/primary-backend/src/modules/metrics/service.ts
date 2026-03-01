@@ -1,6 +1,12 @@
 import { prisma } from "db";
 import { Prisma } from "db/generated/prisma/client";
+<<<<<<< HEAD
 import { cache } from "cache";
+=======
+import { cache } from "@openrouter/cache";
+
+const CACHE_TTL = 60; // 60 seconds TTL for metrics
+>>>>>>> edbf48f (fixing bugs and reapply some features)
 
 function parseDays(range: string): number {
     return range === "90d" ? 90 : range === "30d" ? 30 : 7;
@@ -18,7 +24,11 @@ export abstract class MetricsService {
 
     static async getUserMetrics(userId: number) {
         const cacheKey = `summary:${userId}`;
+<<<<<<< HEAD
         const cached = cache.get<any>(cacheKey);
+=======
+        const cached = await cache.get<any>(cacheKey);
+>>>>>>> edbf48f (fixing bugs and reapply some features)
         if (cached) return cached;
 
         const [result, failedResult, latencyRows] = await Promise.all([
@@ -69,13 +79,21 @@ export abstract class MetricsService {
             p95LatencyMs,
         };
 
+<<<<<<< HEAD
         cache.set(cacheKey, data, 60);
+=======
+        await cache.set(cacheKey, data, CACHE_TTL);
+>>>>>>> edbf48f (fixing bugs and reapply some features)
         return data;
     }
 
     static async getUsageOverTime(userId: number, range: string) {
         const cacheKey = `usage:${userId}:${range}`;
+<<<<<<< HEAD
         const cached = cache.get<any>(cacheKey);
+=======
+        const cached = await cache.get<any>(cacheKey);
+>>>>>>> edbf48f (fixing bugs and reapply some features)
         if (cached) return cached;
 
         const since = getSince(range);
@@ -106,13 +124,21 @@ export abstract class MetricsService {
             cost: Math.round(r.cost * 100) / 100,
         }));
 
+<<<<<<< HEAD
         cache.set(cacheKey, data, 60);
+=======
+        await cache.set(cacheKey, data, CACHE_TTL);
+>>>>>>> edbf48f (fixing bugs and reapply some features)
         return data;
     }
 
     static async getModelBreakdown(userId: number) {
         const cacheKey = `models:${userId}`;
+<<<<<<< HEAD
         const cached = cache.get<any>(cacheKey);
+=======
+        const cached = await cache.get<any>(cacheKey);
+>>>>>>> edbf48f (fixing bugs and reapply some features)
         if (cached) return cached;
 
         const groups = await prisma.usageMetric.groupBy({
@@ -130,13 +156,21 @@ export abstract class MetricsService {
             cost: Math.round((g._sum.cost ?? 0) * 100) / 100,
         }));
 
+<<<<<<< HEAD
         cache.set(cacheKey, data, 60);
+=======
+        await cache.set(cacheKey, data, CACHE_TTL);
+>>>>>>> edbf48f (fixing bugs and reapply some features)
         return data;
     }
 
     static async getProviderBreakdown(userId: number) {
         const cacheKey = `providers:${userId}`;
+<<<<<<< HEAD
         const cached = cache.get<any>(cacheKey);
+=======
+        const cached = await cache.get<any>(cacheKey);
+>>>>>>> edbf48f (fixing bugs and reapply some features)
         if (cached) return cached;
 
         const groups = await prisma.usageMetric.groupBy({
@@ -156,13 +190,21 @@ export abstract class MetricsService {
             avgLatencyMs: Math.round(g._avg.latencyMs ?? 0),
         }));
 
+<<<<<<< HEAD
         cache.set(cacheKey, data, 60);
+=======
+        await cache.set(cacheKey, data, CACHE_TTL);
+>>>>>>> edbf48f (fixing bugs and reapply some features)
         return data;
     }
 
     static async getThroughput(userId: number) {
         const cacheKey = `throughput:${userId}`;
+<<<<<<< HEAD
         const cached = cache.get<any>(cacheKey);
+=======
+        const cached = await cache.get<any>(cacheKey);
+>>>>>>> edbf48f (fixing bugs and reapply some features)
         if (cached) return cached;
 
         const since = new Date();
@@ -188,7 +230,11 @@ export abstract class MetricsService {
             requestsPerMinute: Number(r.requests),
         }));
 
+<<<<<<< HEAD
         cache.set(cacheKey, data, 60);
+=======
+        await cache.set(cacheKey, data, CACHE_TTL);
+>>>>>>> edbf48f (fixing bugs and reapply some features)
         return data;
     }
 
@@ -196,7 +242,11 @@ export abstract class MetricsService {
 
     static async getErrorRateOverTime(userId: number, range: string) {
         const cacheKey = `errorRate:${userId}:${range}`;
+<<<<<<< HEAD
         const cached = cache.get<any>(cacheKey);
+=======
+        const cached = await cache.get<any>(cacheKey);
+>>>>>>> edbf48f (fixing bugs and reapply some features)
         if (cached) return cached;
 
         const since = getSince(range);
@@ -229,13 +279,21 @@ export abstract class MetricsService {
             };
         });
 
+<<<<<<< HEAD
         cache.set(cacheKey, data, 60);
+=======
+        await cache.set(cacheKey, data, CACHE_TTL);
+>>>>>>> edbf48f (fixing bugs and reapply some features)
         return data;
     }
 
     static async getCostOverTime(userId: number, range: string) {
         const cacheKey = `cost:${userId}:${range}`;
+<<<<<<< HEAD
         const cached = cache.get<any>(cacheKey);
+=======
+        const cached = await cache.get<any>(cacheKey);
+>>>>>>> edbf48f (fixing bugs and reapply some features)
         if (cached) return cached;
 
         const since = getSince(range);
@@ -260,13 +318,21 @@ export abstract class MetricsService {
             cost: Math.round(r.cost * 100) / 100,
         }));
 
+<<<<<<< HEAD
         cache.set(cacheKey, data, 60);
+=======
+        await cache.set(cacheKey, data, CACHE_TTL);
+>>>>>>> edbf48f (fixing bugs and reapply some features)
         return data;
     }
 
     static async getLatencyOverTime(userId: number, range: string) {
         const cacheKey = `latency:${userId}:${range}`;
+<<<<<<< HEAD
         const cached = cache.get<any>(cacheKey);
+=======
+        const cached = await cache.get<any>(cacheKey);
+>>>>>>> edbf48f (fixing bugs and reapply some features)
         if (cached) return cached;
 
         const since = getSince(range);
@@ -291,13 +357,21 @@ export abstract class MetricsService {
             avgLatencyMs: Math.round(r.avg_latency),
         }));
 
+<<<<<<< HEAD
         cache.set(cacheKey, data, 60);
+=======
+        await cache.set(cacheKey, data, CACHE_TTL);
+>>>>>>> edbf48f (fixing bugs and reapply some features)
         return data;
     }
 
     static async getTokenUsageOverTime(userId: number, range: string) {
         const cacheKey = `tokens:${userId}:${range}`;
+<<<<<<< HEAD
         const cached = cache.get<any>(cacheKey);
+=======
+        const cached = await cache.get<any>(cacheKey);
+>>>>>>> edbf48f (fixing bugs and reapply some features)
         if (cached) return cached;
 
         const since = getSince(range);
@@ -328,7 +402,11 @@ export abstract class MetricsService {
             totalTokens: Number(r.total_tokens),
         }));
 
+<<<<<<< HEAD
         cache.set(cacheKey, data, 60);
+=======
+        await cache.set(cacheKey, data, CACHE_TTL);
+>>>>>>> edbf48f (fixing bugs and reapply some features)
         return data;
     }
 }

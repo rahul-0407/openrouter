@@ -19,6 +19,32 @@ model User {
   conversations      Conversation[]
   usageMetrics       UsageMetric[]
   walletTransactions WalletTransaction[]
+  chatThreads        ChatThread[]
+}
+
+model ChatThread {
+  id        Int           @id @default(autoincrement())
+  userId    Int
+  title     String
+  model     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  user      User          @relation(fields: [userId], references: [id])
+  messages  ChatMessage[]
+
+  @@index([userId, updatedAt])
+}
+
+model ChatMessage {
+  id           Int        @id @default(autoincrement())
+  threadId     Int
+  role         String     // "user" | "assistant" | "system"
+  content      String
+  tokens       Int?
+  createdAt    DateTime   @default(now())
+  thread       ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId, createdAt])
 }
 
 model ApiKey {

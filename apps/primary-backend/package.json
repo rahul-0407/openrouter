@@ -13,6 +13,7 @@
     "@elysiajs/jwt": "^1.4.0",
     "cache": "*",
     "db": "*",
+    "@openrouter/cache": "workspace:*",
     "elysia": "latest"
   },
   "devDependencies": {

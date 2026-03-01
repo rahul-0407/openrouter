@@ -1,13 +1,24 @@
 import { prisma } from "db";
+<<<<<<< HEAD
 import { cache } from "cache";
+=======
+import { cache } from "@openrouter/cache";
+
+const CACHE_TTL = 30; // 30 seconds TTL for provider health
+>>>>>>> edbf48f (fixing bugs and reapply some features)
 
 export abstract class ProviderHealthService {
     static async getProviderHealthSummary() {
         const cacheKey = "provider:health:summary";
+<<<<<<< HEAD
         const cached = cache.get<any[]>(cacheKey);
+=======
+        const cached = await cache.get<any[]>(cacheKey);
+>>>>>>> edbf48f (fixing bugs and reapply some features)
         if (cached) return cached;
 
         // Aggregate metrics per provider from the last 24 hours
+        // ... (rest of method same)
         const since = new Date();
         since.setHours(since.getHours() - 24);
 
@@ -77,13 +88,22 @@ export abstract class ProviderHealthService {
             };
         });
 
+<<<<<<< HEAD
         cache.set(cacheKey, result, 30); // 30s TTL
+=======
+        await cache.set(cacheKey, result, CACHE_TTL);
+>>>>>>> edbf48f (fixing bugs and reapply some features)
         return result;
     }
 
     static async getProviderHealthTimeSeries(range: string = "24h") {
+<<<<<<< HEAD
         const cacheKey = `provider:health:timeseries:${range}`;
         const cached = cache.get<any[]>(cacheKey);
+=======
+        const cacheKey = `provider:health:ts:${range}`;
+        const cached = await cache.get<any[]>(cacheKey);
+>>>>>>> edbf48f (fixing bugs and reapply some features)
         if (cached) return cached;
 
         const hours = range === "7d" ? 168 : range === "30d" ? 720 : 24;
@@ -116,7 +136,11 @@ export abstract class ProviderHealthService {
             errorRate: Math.round(r.error_rate * 100) / 100
         }));
 
+<<<<<<< HEAD
         cache.set(cacheKey, result, 30); // 30s TTL
+=======
+        await cache.set(cacheKey, result, CACHE_TTL);
+>>>>>>> edbf48f (fixing bugs and reapply some features)
         return result;
     }
 }

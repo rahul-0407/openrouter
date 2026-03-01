@@ -1,4 +1,5 @@
 import { prisma } from "db"
+<<<<<<< HEAD
 import { cache } from "cache"
 
 // Provider name → environment variable mapping for API key availability check
@@ -10,6 +11,18 @@ const PROVIDER_API_KEY_MAP: Record<string, string[]> = {
     "Meta": ["META_API_KEY"],
     "Mistral": ["MISTRAL_API_KEY"],
     "Cohere": ["COHERE_API_KEY"],
+=======
+import { cache } from "@openrouter/cache"
+
+// Provider name → environment variable mapping for API key availability check
+const PROVIDER_API_KEY_MAP: Record<string, string> = {
+    "OpenAi": "OPENAI_API_KEY",
+    "Claude API": "CLAUDE_API_KEY",
+    "Google API": "GOOGLE_API_KEY",
+    "Meta": "META_API_KEY",
+    "Mistral": "MISTRAL_API_KEY",
+    "Cohere": "COHERE_API_KEY",
+>>>>>>> edbf48f (fixing bugs and reapply some features)
 };
 
 function isProviderAvailable(providerName: string): boolean {
@@ -26,7 +39,11 @@ export abstract class ModelsService {
 
     static async getModels() {
         const cacheKey = "models:list";
+<<<<<<< HEAD
         const cached = cache.get<any[]>(cacheKey);
+=======
+        const cached = await cache.get<any[]>(cacheKey);
+>>>>>>> edbf48f (fixing bugs and reapply some features)
         if (cached) return cached;
 
         const models = await prisma.model.findMany({
@@ -41,6 +58,7 @@ export abstract class ModelsService {
         })
 
         const result = models.map(model => {
+<<<<<<< HEAD
             // A model is available if:
             // 1. It has a provider mapping with 0 cost (free model)
             // 2. OR it has a provider mapping where the provider has a configured API key
@@ -50,6 +68,12 @@ export abstract class ModelsService {
                     const hasKey = isProviderAvailable(mapping.provider.name);
                     return isFree || hasKey;
                 }
+=======
+            // A model is available if it has at least one provider mapping
+            // AND that provider has a configured API key
+            const hasAvailableProvider = model.modelProviderMappings.some(
+                mapping => isProviderAvailable(mapping.provider.name)
+>>>>>>> edbf48f (fixing bugs and reapply some features)
             );
 
             return {
@@ -63,9 +87,15 @@ export abstract class ModelsService {
                     website: model.company.website
                 }
             };
+<<<<<<< HEAD
         })
 
         cache.set(cacheKey, result, 600); // 10 minutes
+=======
+        });
+
+        await cache.set(cacheKey, result, 600); // 10 minutes TTL
+>>>>>>> edbf48f (fixing bugs and reapply some features)
         return result;
     }
 

@@ -10,11 +10,21 @@
   "dependencies": {
     "@theguild/remark-mermaid": "^0.3.0",
     "@theguild/remark-npm2yarn": "^0.3.0",
+<<<<<<< HEAD
     "lucide-react": "^0.575.0",
+=======
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.34.3",
+>>>>>>> edbf48f (fixing bugs and reapply some features)
     "next": "^15.1.5",
     "nextra": "^4.2.16",
     "nextra-theme-docs": "^4.2.16",
     "react": "^19.0.0",
+<<<<<<< HEAD
     "react-dom": "^19.0.0"
+=======
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^3.5.0"
+>>>>>>> edbf48f (fixing bugs and reapply some features)
   }
 }

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 type CacheEntry<T> = {
     value: T;
     expiry: number | null;
@@ -69,3 +70,6 @@ export class CacheService {
 }
 
 export const cache = CacheService.getInstance();
+=======
+console.log("Hello via Bun!");
+>>>>>>> edbf48f (fixing bugs and reapply some features)
